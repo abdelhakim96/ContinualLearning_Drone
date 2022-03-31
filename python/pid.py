@@ -90,6 +90,6 @@ class PID:
         tau_y = self.kv_p*e_v + self.kv_i*self.ie_v + self.kv_d*a_v
         tau_z = self.kw_p*e_w + self.kw_i*self.ie_w + self.kw_d*a_w
 
-        commands = np.ravel(np.array([tau_y, tau_z]))
+        commands = np.ravel(np.array([tau_y, tau_z], dtype=object))
 
         return commands

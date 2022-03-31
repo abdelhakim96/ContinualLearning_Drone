@@ -1,7 +1,7 @@
 # MAIN
 
 import numpy as np
-import csv
+import pandas as pd
 
 from show import show
 from pid import PID
@@ -69,13 +69,11 @@ for k in np.arange(k_end - 1):
 
 # Plot results
 
-# show(t, pose, trajectory, command)
+show(t, pose, trajectory, command)
 
 # Save results
 
-file = open("data\samples_step.txt", "w")
-file.write("%s = %s\n" % ("t", t))
-file.write("%s = %s\n" % ("pose", pose))
-file.write("%s = %s\n" % ("command", command))
-file.close()
-# save('data/samples_step', 't', 'pose', 'command')
+header = ['Time', 'x', 'y', 'orientation', 'tau_y', 'tau_z']
+data = np.column_stack([t, pose, command])
+data = pd.DataFrame(data, columns=header)
+data.to_csv('data\samples_step.csv', index=False)
