@@ -12,7 +12,7 @@ from show import show
 # Parameters
 
 controller = 1  # 1 - PID controller, 2 - DNN controller
-trajectory = 3  # 1 - circular, 2 - set-point, 3 - random points, 4 - square-wave
+trajectory = 1  # 1 - circular, 2 - set-point, 3 - random points, 4 - square-wave
 uncertainty = 0  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half
 disturbance = 0  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
 noise = 0  # measurement noise standard deviation: 0 - no noise, >0 - white noise
