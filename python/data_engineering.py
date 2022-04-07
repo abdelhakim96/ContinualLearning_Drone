@@ -4,9 +4,46 @@ import math
 import numpy as np
 
 
-def data_engineering(t, pose, command):
-    dt = t[1] - t[0]
-    size = len(t)
+def data_engineering(dt, pose, command):
+    scaling = 1  # 0 - no scaling, 1 - standardization, 2 - normalization
+
+    size = len(pose)
+
+    # Translation invariant: input = [x(k + r_x) - x(k), y(k + r_y) - y(k)]
+    translation = pose[1:, :2] - pose[:-1, :2]
+
+    # Derive velocities
+    velocity = get_velocities(dt, pose)
+
+    # Compose dataset
+    data = np.zeros((size, 12))
+    data[:-1, 0:2] = translation  # position translation
+    data[:, 2] = np.sin(pose[:, 2])  # make orientation periodic with sin and cos
+    data[:, 3] = np.cos(pose[:, 2])  # make orientation periodic with sin and cos
+    data[:-1, 4] = velocity[:, 0]  # linear velocity
+    data[:-1, 5] = velocity[:, 1]  # angular velocity
+    data[:-2, 6:8] = translation[1:]  # future translation at (k + 1)
+    data[:-3, 8:10] = translation[2:]  # future translation at (k + 2)
+    data[:, 10:12] = command  # control inputs
+
+    # Scaling
+    mu = data.mean(0)
+    sigma = data.std(0)
+    data_min = data.min(0)
+    data_max = data.max(0)
+    if scaling == 1:
+        data = (data - mu)/sigma
+    if scaling == 2:
+        data = 2 * (data - data_min)/(data_max - data_min) - 1
+
+    data = np.row_stack([mu, sigma, data_min, data_max, np.nan * np.ones((1, 12)), data])
+    data[4, 0] = scaling
+
+    return data
+
+
+def get_velocities(dt, pose):
+    size = len(pose)
 
     # Derive linear velocities
 
@@ -29,17 +66,4 @@ def data_engineering(t, pose, command):
             w[i] -= 2 * math.pi * np.sign(w[i])
     w /= dt
 
-    # Translation invariant: input = [x(k + r_x) - x(k), y(k + r_y) - y(k)]
-    translation = pose[1:, :2] - pose[:-1, :2]
-
-    # Compose dataset
-    data = np.empty((size, 12))
-    data[:-1, 0:2] = translation  #
-    data[:, 2] = np.sin(pose[:, 2])  # make orientation periodic with sin and cos
-    data[:, 3] = np.cos(pose[:, 2])  # make orientation periodic with sin and cos
-    data[:-1, 4] = v  #
-    data[:-1, 5] = w  #
-    data[:-2, 6:8] = translation[1:]  #
-    data[:-3, 8:10] = translation[2:]  #
-    data[:, 10:12] = command  # control input
-    return data
+    return np.column_stack([v, w])

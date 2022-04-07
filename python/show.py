@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def show(t, pose, trajectory, command):
+def show_plots(t, pose, trajectory, command):
     # Compute the error
 
     e_x = trajectory[:, 0] - pose[:, 0]
@@ -12,11 +12,11 @@ def show(t, pose, trajectory, command):
     e = np.sqrt(e_x**2 + e_y**2)
     print(np.mean(e))
 
-    # Plot 3D trajectory
+    # Plot 2D trajectory
 
     plt.title('2D Trajectory')
-    plt.plot(trajectory[:, 0], trajectory[:, 1], label="desired")
-    plt.plot(pose[:, 0], pose[:, 1], label="actual")
+    plt.plot(trajectory[:, 0], trajectory[:, 1], 'g--', label="desired")
+    plt.plot(pose[:, 0], pose[:, 1], 'b', label="actual")
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
     plt.legend()
@@ -88,3 +88,17 @@ def show(t, pose, trajectory, command):
     # set(gca,'TickLabelInterpreter','latex')
     # plt.xlabel('$t$ [s]','interpreter','latex','fontsize',15)
     # plt.ylabel('Euclidean error [m]','interpreter','latex','fontsize',15)
+
+
+def show_animation(pose, trajectory):
+
+    # Plot 2D trajectory
+
+    plt.title('2D Trajectory')
+    plt.plot(trajectory[-2:, 0], trajectory[-2:, 1], 'g--')
+    plt.plot(pose[-2:, 0], pose[-2:, 1], 'bo')
+    plt.pause(0.001)
+    plt.xlabel('x [m]')
+    plt.ylabel('y [m]')
+    #plt.legend()
+    #plt.show()
