@@ -19,7 +19,6 @@ class DNN:
         with open('models/parameters_kinematics.pkl', 'rb') as f:
             dictionary = pickle.load(f)
 
-        variables = ['diff_x(k)', 'diff_y(k)', 'sin', 'cos', 'diff_yaw(k)', 'v', 'w']
         variables = ['sin', 'cos', 'diff_x', 'diff_y', 'diff_yaw', 'w_y', 'w_z']
 
         self.type_scaling = dictionary['type_scaling']
