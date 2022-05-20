@@ -14,7 +14,7 @@ from show import show_plots, show_animation
 collect_data = False  # True - collect data, False - test performance
 controller = 2  # 0 - random, 1 - PID, 2 - DNN, 3 - inverse
 online_learning = False  # For DNN (controller = 2): True (1) - enable online learning, False (1) - disable online learning
-trajectory = 3  # 0 - random points, 1 - circular, 2 - set-point, 3 - 8-shaped, 4 - square-wave
+trajectory = 1  # 0 - random points, 1 - circular, 2 - set-point, 3 - 8-shaped, 4 - square-wave
 uncertainty = 0  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half;
 # default = 1
 disturbance = 0  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
