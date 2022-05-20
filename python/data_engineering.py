@@ -13,18 +13,19 @@ def data_engineering(dt, pose, command):
     translation = pose[1:, :2] - pose[:-1, :2]
 
     # Derive velocities
-    velocity = get_velocities(dt, pose)
+    velocity = get_velocity3(dt, pose)
 
     # Compose dataset
-    data = np.zeros((size, 12))
+    data = np.zeros((size, 13))
     data[:-1, 0:2] = translation  # position translation
     data[:, 2] = np.sin(pose[:, 2])  # make orientation periodic with sin and cos
     data[:, 3] = np.cos(pose[:, 2])  # make orientation periodic with sin and cos
-    data[:-1, 4] = velocity[:, 0]  # linear velocity
-    data[:-1, 5] = velocity[:, 1]  # angular velocity
-    data[:-2, 6:8] = translation[1:]  # future translation at (k + 1)
-    data[:-3, 8:10] = translation[2:]  # future translation at (k + 2)
-    data[:, 10:12] = command  # control inputs
+    data[:-1, 4] = velocity[:, 0]  # linear x velocity
+    data[:-1, 5] = velocity[:, 1]  # linear y velocity
+    data[:-1, 6] = velocity[:, 1]  # angular z velocity
+    data[:-2, 7:9] = translation[1:]  # future translation at (k + 1)
+    data[:-3, 9:11] = translation[2:]  # future translation at (k + 2)
+    data[:, 11:13] = command  # control inputs1
 
     # Scaling
     mu = data.mean(0)
@@ -42,7 +43,7 @@ def data_engineering(dt, pose, command):
     return data
 
 
-def get_velocities(dt, pose):
+def get_velocity2(dt, pose):
     size = len(pose)
 
     # Derive linear velocities
@@ -67,3 +68,22 @@ def get_velocities(dt, pose):
     w /= dt
 
     return np.column_stack([v, w])
+
+
+def get_velocity3(dt, pose):
+    size = len(pose)
+
+    # Derive linear velocities
+
+    vx = (pose[1:, 0] - pose[:-1, 0]) / dt
+    vy = (pose[1:, 1] - pose[:-1, 1]) / dt
+
+    # Derive angular velocities
+
+    wz = (pose[1:, 2] - pose[:-1, 2])
+    for i in np.arange(size - 1):
+        if np.abs(wz[i]) > math.pi:
+            wz[i] -= 2 * math.pi * np.sign(wz[i])
+    wz /= dt
+
+    return np.column_stack([vx, vy, wz])
