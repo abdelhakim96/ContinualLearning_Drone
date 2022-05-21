@@ -109,8 +109,6 @@ class UnicycleSimpleDataset(Dataset):
             writer.writerow(['num_inputs', len(self.input[0])])
             writer.writerow(['num_outputs', len(self.output[0])])
 
-        exit()
-
     def num_inputs(self):
         return len(self.input[0])
 
