@@ -2,7 +2,7 @@ import torch
 import pandas as pd
 import numpy as np
 import math
-import pickle
+import csv
 import time
 
 from torch.utils.data import Dataset, DataLoader, random_split
@@ -47,20 +47,13 @@ class UnicycleSimpleDataset(Dataset):
         data[['diff_yaw']] -= \
             (np.abs(data[['diff_yaw']].values) > math.pi) * 2 * math.pi * np.sign(data[['diff_yaw']].values)
 
-        # future angular velocity
-        #data.loc[0:len(data[['w']].values[1:]) - 1, 'w(k+1)'] = data[['w']].values[1:]
-
         # remove NaN values
         data.drop(data.tail(2).index, inplace=True)
 
-        # Generate dataset
-
-        #data = self.generate_data(1000000)
-
         # Save dataset
 
-        data[['sin', 'cos', 'diff_x', 'diff_y', 'diff_yaw', 'w_y', 'w_z']].\
-            to_csv('data/dataset_' + dataset_name + '.csv', index=False)
+        header = ['sin', 'cos', 'diff_x', 'diff_y', 'diff_yaw', 'w_y', 'w_z']
+        # data[header].to_csv('data/dataset_' + dataset_name + '.csv', index=False)
 
         # Data scaling
 
@@ -105,35 +98,18 @@ class UnicycleSimpleDataset(Dataset):
 
         # Save data information
 
-        dictionary = {'type_scaling': type_scaling,
-                      'mu': mu,
-                      'sigma': sigma,
-                      'data_min': data_min,
-                      'data_max': data_max,
-                      'num_inputs': len(self.input[0]),
-                      'num_outputs': len(self.output[0])}
-        with open('models/parameters_kinematics.pkl', 'wb') as f:
-            pickle.dump(dictionary, f)
+        with open('models/data_properties_kinematics.csv', 'w', newline='') as f:
+            writer = csv.writer(f, delimiter=',')
+            writer.writerow(['property'] + header)
+            writer.writerow(['mu'] + list(mu[header]))
+            writer.writerow(['sigma'] + list(sigma[header]))
+            writer.writerow(['min'] + list(data_min[header]))
+            writer.writerow(['max'] + list(data_max[header]))
+            writer.writerow(['type_scaling', type_scaling])
+            writer.writerow(['num_inputs', len(self.input[0])])
+            writer.writerow(['num_outputs', len(self.output[0])])
 
-    def generate_data(self, n_samples):
-
-        r = 0.5
-        dt = 0.01
-
-        pose = np.random.randn(n_samples, 3)
-        pose_d = np.random.randn(n_samples, 3)
-
-        diff_x = pose_d[:, 0] - pose[:, 0]
-        diff_y = pose_d[:, 1] - pose[:, 1]
-        diff_yaw = pose_d[:, 2] - pose[:, 2]
-
-        w_y = 1 / r * (np.multiply(np.cos(pose[:, 2]), diff_x) + np.multiply(np.sin(pose[:, 2]), diff_y)) / dt
-        w_z = diff_yaw / dt
-
-        data = np.column_stack([np.cos(pose[:, 2]), np.sin(pose[:, 2]), diff_x, diff_y, diff_yaw, w_y, w_z])
-        dataset = pd.DataFrame(data, columns=['sin', 'cos', 'diff_x', 'diff_y', 'diff_yaw', 'w_y', 'w_z'])
-
-        return dataset
+        exit()
 
     def num_inputs(self):
         return len(self.input[0])
@@ -222,8 +198,11 @@ if __name__ == '__main__':
               time.strftime('%H:%M:%S', time.gmtime(elapsedTime / (epoch + 1) * (maxEpochs - epoch - 1))) + ' = ' +
               time.strftime('%H:%M:%S', time.gmtime(elapsedTime / (epoch + 1) * maxEpochs)))
 
-    print('Train Loss:', train_losses[-1])
-    print('Validation Loss:', validation_losses[-1])
+    print('Scaled Train Loss:', train_losses[-1])
+    print('Scaled Validation Loss:', validation_losses[-1])
+
+    print('Unscaled Train Loss:', train_losses[-1])
+    print('Unscaled Validation Loss:', validation_losses[-1])
 
     writer.flush()
 

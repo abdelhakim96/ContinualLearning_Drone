@@ -6,6 +6,7 @@
 import numpy as np
 import torch
 import math
+import csv
 import pickle
 
 from torch.optim import SGD
@@ -16,18 +17,18 @@ from model import MLP
 
 class DNN:
     def __init__(self, _, model_name):
-        with open('models/parameters_kinematics.pkl', 'rb') as f:
-            dictionary = pickle.load(f)
+        with open('models/data_properties_kinematics.csv', 'r', newline='') as f:
+            reader = csv.reader(f)
+            data = list(reader)
 
-        variables = ['sin', 'cos', 'diff_x', 'diff_y', 'diff_yaw', 'w_y', 'w_z']
-
-        self.type_scaling = dictionary['type_scaling']
-        self.data_min = dictionary['data_min'][variables].values
-        self.data_max = dictionary['data_max'][variables].values
-        self.mu = dictionary['mu'][variables].values
-        self.sigma = dictionary['sigma'][variables].values
-        self.num_inputs = dictionary['num_inputs']
-        self.num_outputs = dictionary['num_outputs']
+        self.variables = data[0][1:]
+        self.mu = np.array(data[1][1:], dtype=np.float32)
+        self.sigma = np.array(data[2][1:], dtype=np.float32)
+        self.data_min = np.array(data[3][1:], dtype=np.float32)
+        self.data_max = np.array(data[4][1:], dtype=np.float32)
+        self.type_scaling = int(data[5][1])
+        self.num_inputs = int(data[6][1])
+        self.num_outputs = int(data[7][1])
 
         num_hidden_units = []
         num = ''
