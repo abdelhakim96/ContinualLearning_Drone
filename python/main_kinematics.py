@@ -21,7 +21,7 @@ uncertainty = -1  # internal uncertainty: 0 - no uncertainty, 1 - all parameters
 disturbance = -2  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
 # default = -2
 noise = 0.0  # measurement noise standard deviation: 0 - no noise, >0 - white noise
-# default = 0.03
+# default = 0.0001
 
 animation = False  # True - enable online animation, False - disable online animation
 
