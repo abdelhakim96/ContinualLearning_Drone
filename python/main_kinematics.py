@@ -17,8 +17,8 @@ online_learning = True  # For DNN (controller = 2): True - enable online learnin
 trajectory = 1  # 0 - random points, 1 - circular, 2 - 8-shaped, 3 - set-point, 4 - square-wave
 uncertainty = 1  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half;
 # default = 1
-disturbance = 0  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
-# default = -100
+disturbance = -2  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
+# default = -2
 noise = 0  # measurement noise standard deviation: 0 - no noise, >0 - white noise
 # default = 0.01
 
