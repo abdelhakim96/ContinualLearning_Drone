@@ -2,20 +2,20 @@
 
 import numpy as np
 
-from pid_kinematics import PID
-from dnn_kinematics import DNN
-from inverse_kinematics import Inverse
-from unicycle_kinematics import Unicycle
-from save_data import save_data_kinematics
-from show import show_plots, show_animation
+from kinematics.pid_kinematics import PID
+from kinematics.dnn_kinematics import DNN
+from kinematics.inverse_kinematics import Inverse
+from kinematics.unicycle_kinematics import Unicycle
+from utils.save_data import save_data_kinematics
+from utils.show import show_plots, show_animation
 
 # Parameters
 
 collect_data = False  # True - collect data, False - test performance
 controller = 2  # 0 - random, 1 - PID, 2 - DNN, 3 - inverse
-online_learning = False  # For DNN (controller = 2): True (1) - enable online learning, False (1) - disable online learning
-trajectory = 3  # 0 - random points, 1 - circular, 2 - set-point, 3 - 8-shaped, 4 - square-wave
-uncertainty = 0  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half;
+online_learning = True  # For DNN (controller = 2): True - enable online learning, False - disable online learning
+trajectory = 1  # 0 - random points, 1 - circular, 2 - 8-shaped, 3 - set-point, 4 - square-wave
+uncertainty = 1  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half;
 # default = 1
 disturbance = 0  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
 # default = -100
@@ -58,26 +58,22 @@ t = np.linspace(0, dt * k_end, num=(k_end + 1))
 # Generate trajectory
 
 if trajectory == 0:  # random points (for collecting training data)
-    trajectory = np.random.randn(k_end + 1, 3)
-else:
-    if trajectory == 1:  # circular
-        trajectory = np.column_stack([2 * np.cos(2 * t), -2 * np.sin(2 * t), np.zeros((k_end + 1, 1))])
-    else:
-        if trajectory == 2:  # set-point
-            trajectory = np.column_stack([
-                2 * np.ones((k_end + 1, 1)), -2 * np.ones((k_end + 1, 1)), np.zeros((k_end + 1, 1))])
-        else:
-            if trajectory == 3:  # 8-shaped
-                trajectory = np.column_stack([
-                    4 / (3 - np.cos(2 * t)) * np.cos(t), 8 / (3 - np.cos(2 * t)) * np.sin(-2 * t) / np.sqrt(2),
-                    np.zeros((k_end + 1, 1))])
-            else:
-                if trajectory == 4:  # square-wave
-                    d = np.fix(t)
-                    d = d % 4
-                    b1 = np.fix(d / 2)
-                    b0 = d - 2 * b1
-                    trajectory = np.column_stack([b1, b0, np.zeros((k_end + 1, 1))])
+    reference = np.random.randn(k_end + 1, 3)
+if trajectory == 1:  # circular
+    reference = np.column_stack([2 * np.cos(2 * t), -2 * np.sin(2 * t), np.zeros((k_end + 1, 1))])
+if trajectory == 2:  # 8-shaped
+    reference = np.column_stack([
+        4 / (3 - np.cos(2 * t)) * np.cos(t),
+        4 / (3 - np.cos(2 * t)) * np.sin(-2 * t) / np.sqrt(2),
+        np.zeros((k_end + 1, 1))])
+if trajectory == 3:  # set-point
+    reference = np.column_stack([2 * np.ones((k_end + 1, 1)), -2 * np.ones((k_end + 1, 1)), np.zeros((k_end + 1, 1))])
+if trajectory == 4:  # square-wave
+    d = np.fix(t)
+    d = d % 4
+    b1 = np.fix(d / 2)
+    b0 = d - 2 * b1
+    reference = np.column_stack([b1, b0, np.zeros((k_end + 1, 1))])
 
 unicycle = Unicycle(dt, [x_init, y_init, yaw_init])
 
@@ -87,17 +83,17 @@ inverse = Inverse(unicycle)
 
 # Main loop
 
-for k in np.arange(1, k_end - 1):
+for k in range(1, k_end - 1):
 
     # Unicycle control
     if collect_data:
         command_random[k, :] = np.random.uniform(-10, 10, 2)
     else:
-        command_pid[k, :] = pid.control(pose[k, :], trajectory[k, :])
-        command_dnn[k, :] = dnn.control(pose[k, :], trajectory[k + 1, :])
+        command_pid[k, :] = pid.control(pose[k, :], reference[k, :])
+        command_dnn[k, :] = dnn.control(pose[k, :], reference[k + 1, :])
         if online_learning and k > 0:
             dnn.learn(pose[k, :], pose[k - 1, :], command[k - 1, :])
-        command_inverse[k, :] = inverse.control(pose[k, :], trajectory[k + 1, :])
+        command_inverse[k, :] = inverse.control(pose[k, :], reference[k + 1, :])
 
     if controller == 0:
         command[k, :] = command_random[k, :]
@@ -119,14 +115,14 @@ for k in np.arange(1, k_end - 1):
 
     # Animation
     if animation:
-        show_animation(pose[:k + 1], trajectory[:k + 1])
+        show_animation(pose[:k + 1], reference[:k + 1])
 
 # Save results
 
 if collect_data:
-    save_data_kinematics(t, trajectory, pose, command, 'unicycle_kinematics_random_random')
+    save_data_kinematics(t, reference, pose, command, 'unicycle_kinematics_random')
 
 # Plot results
 
 if not collect_data:
-    show_plots(t, pose_real, trajectory, command, command_dnn, command_inverse)
+    show_plots(t, pose_real, reference, command, command_dnn, command_inverse)
