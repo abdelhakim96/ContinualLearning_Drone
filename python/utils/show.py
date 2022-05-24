@@ -20,9 +20,18 @@ def show_plots(t, pose, trajectory, command, command_dnn, command_inverse):
     e_yaw -= (np.abs(e_yaw) > np.pi) * 2 * np.pi * np.sign(e_yaw)  # normalise angles
     # print(np.mean(np.abs(e_yaw)))
 
-    # Max control inputs
+    # Compute difference to the analytical inverse
 
-    # print(np.max(np.abs(command[:, 0])), np.max(np.abs(command[:, 1])))
+    command[:, 0] = np.clip(command[:, 0], -100, 100)
+    command[:, 1] = np.clip(command[:, 1], -100, 100)
+    command_dnn[:, 0] = np.clip(command_dnn[:, 0], -100, 100)
+    command_dnn[:, 1] = np.clip(command_dnn[:, 1], -100, 100)
+    command_inverse[:, 0] = np.clip(command_inverse[:, 0], -100, 100)
+    command_inverse[:, 1] = np.clip(command_inverse[:, 1], -100, 100)
+
+    approximation_difference1 = np.mean(np.abs(command_dnn[:-2, 0] - command_inverse[:-2, 0]))
+    approximation_difference2 = np.mean(np.abs(command_dnn[:-2, 1] - command_inverse[:-2, 1]))
+    print(colored('Approximation difference: [%.1f, %.1f] rad/s' % (approximation_difference1, approximation_difference2), 'blue'))
 
     # Plot 2D trajectory
 
