@@ -7,7 +7,7 @@ from termcolor import colored
 
 def show_plots(t, pose, trajectory, command, command_dnn, command_inverse):
 
-    # Compute position the error
+    # Compute position error
 
     e_x = trajectory[:, 0] - pose[:, 0]
     e_y = trajectory[:, 1] - pose[:, 1]
@@ -22,12 +22,12 @@ def show_plots(t, pose, trajectory, command, command_dnn, command_inverse):
 
     # Compute difference to the analytical inverse
 
-    command[:, 0] = np.clip(command[:, 0], -100, 100)
-    command[:, 1] = np.clip(command[:, 1], -100, 100)
-    command_dnn[:, 0] = np.clip(command_dnn[:, 0], -100, 100)
-    command_dnn[:, 1] = np.clip(command_dnn[:, 1], -100, 100)
-    command_inverse[:, 0] = np.clip(command_inverse[:, 0], -100, 100)
-    command_inverse[:, 1] = np.clip(command_inverse[:, 1], -100, 100)
+    command[:, 0] = np.clip(command[:, 0], -10, 20)
+    command[:, 1] = np.clip(command[:, 1], -90, 90)
+    command_dnn[:, 0] = np.clip(command_dnn[:, 0], -10, 20)
+    command_dnn[:, 1] = np.clip(command_dnn[:, 1], -90, 90)
+    command_inverse[:, 0] = np.clip(command_inverse[:, 0], -10, 20)
+    command_inverse[:, 1] = np.clip(command_inverse[:, 1], -90, 90)
 
     approximation_difference1 = np.mean(np.abs(command_dnn[:-2, 0] - command_inverse[:-2, 0]))
     approximation_difference2 = np.mean(np.abs(command_dnn[:-2, 1] - command_inverse[:-2, 1]))
@@ -37,9 +37,11 @@ def show_plots(t, pose, trajectory, command, command_dnn, command_inverse):
 
     plt.figure(1)
     plt.title('2D Trajectory')
-    plt.scatter(trajectory[int(len(trajectory) * 1 / 4), 0], trajectory[int(len(trajectory) * 1 / 4), 1], c='r', marker='X')
-    plt.scatter(trajectory[int(len(trajectory) * 2 / 4), 0], trajectory[int(len(trajectory) * 2 / 4), 1], c='r', marker='X')
-    plt.scatter(trajectory[int(len(trajectory) * 3 / 4), 0], trajectory[int(len(trajectory) * 3 / 4), 1], c='r', marker='X')
+    plt.scatter(pose[0, 0], pose[0, 1], c='r', marker='o')
+    plt.scatter(pose[-2, 0], pose[-2, 1], c='b', marker='o')
+    plt.scatter(pose[int(len(pose) * 1 / 4), 0], pose[int(len(pose) * 1 / 4), 1], c='r', marker='X')
+    plt.scatter(pose[int(len(pose) * 2 / 4), 0], pose[int(len(pose) * 2 / 4), 1], c='r', marker='X')
+    plt.scatter(pose[int(len(pose) * 3 / 4), 0], pose[int(len(pose) * 3 / 4), 1], c='r', marker='X')
     plt.plot(trajectory[:, 0], trajectory[:, 1], 'g--', label="desired")
     plt.plot(pose[:-1, 0], pose[:-1, 1], 'b', label="actual")
     #plt.scatter(rotate_x, rotate_y, c='r', marker='X')
@@ -106,9 +108,6 @@ def show_plots(t, pose, trajectory, command, command_dnn, command_inverse):
     # plt.ylabel('Euclidean error [m]','interpreter','latex','fontsize',15)
 
     # Plot control inputs
-
-    command_inverse = np.clip(command_inverse, -10, 10)
-    command = np.clip(command, -10, 10)
 
     plt.figure(31)
     plt.title('Control Input')

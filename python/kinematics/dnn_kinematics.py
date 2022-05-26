@@ -16,7 +16,7 @@ from models.model import MLP
 from cl.buffer import Buffer
 from cl.exp_replay import ExperienceReplay
 
-dataset_name = 'unicycle_kinematics_random'
+dataset_name = 'unicycle_kinematics_random_bound100'
 
 
 class Cache:
@@ -85,7 +85,8 @@ class DNN:
         # Define the loss function and optimizer
 
         self.criterion = torch.nn.MSELoss()
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001) # SGD(self.model.parameters(), lr=0.001, momentum=0.9)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
+        #self.optimizer = SGD(self.model.parameters(), lr=0.001, momentum=0.9)
         # self.optimizer.load_state_dict(torch.load('models/optimiser_' + model_name + '.pth'))
 
         # Define cache queue and buffer
@@ -101,9 +102,10 @@ class DNN:
                                       mem_iters=1)
 
         # Initialise cache and buffer with random samples
-        dataset = pd.read_csv('data/dataset_' + dataset_name + '_smaller1.csv')
+        dataset = pd.read_csv('data/dataset_' + dataset_name + '.csv')
         random_indices = np.random.randint(len(dataset), size=buffer_size)
         random_samples = dataset[['sin', 'cos', 'diff_x', 'diff_y', 'diff_yaw', 'w_y', 'w_z']].values[random_indices]
+        #random_samples = dataset.values  # FOR TESTING
 
         # Save smaller dataset
         df = pd.DataFrame(data=random_samples, columns=['sin', 'cos', 'diff_x', 'diff_y', 'diff_yaw', 'w_y', 'w_z'])

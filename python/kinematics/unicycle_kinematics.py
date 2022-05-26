@@ -13,11 +13,12 @@ class Unicycle:
         self.dt = dt
 
         # Local parameters
-        self.init_r = 0.5   # initial wheel radius
+        self.init_r = 0.3   # initial wheel radius
         self.r = self.init_r  # actual wheel radius
 
         # Bounds
-        self.max_input = 100  # input
+        self.max_w_y = 100  # for input 1
+        self.max_w_z = 100  # for input 2
 
         # Initialize state
         self.state = np.zeros(3)
@@ -41,8 +42,8 @@ class Unicycle:
         self.r = self.init_r * 2 ** uncertainty
 
         # Bound commands
-        w_y = min(max(command[0], -self.max_input/2), self.max_input) + disturbance
-        w_z = min(max(command[1], -self.max_input), self.max_input) + disturbance
+        w_y = min(max(command[0], -self.max_w_y/2), self.max_w_y) + disturbance
+        w_z = min(max(command[1], -self.max_w_z), self.max_w_z) + disturbance
 
         # System dynamics
         dstate = np.zeros(3)

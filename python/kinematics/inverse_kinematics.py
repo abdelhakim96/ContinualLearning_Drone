@@ -12,6 +12,11 @@ class Inverse:
 
     def control(self, pose, trajectory):
 
+        # Parameters
+
+        r = self.unicycle.r
+        disturbance = self.unicycle.disturbance
+
         # Actual state
 
         x = pose[0] - self.unicycle.noise[0]
@@ -33,8 +38,6 @@ class Inverse:
 
         # Inverse law
 
-        r = self.unicycle.r
-        disturbance = self.unicycle.disturbance
         w_y = 1 / r * (math.cos(yaw) * e_x + math.sin(yaw) * e_y) / self.dt - disturbance
         w_z = e_yaw / self.dt - disturbance
 

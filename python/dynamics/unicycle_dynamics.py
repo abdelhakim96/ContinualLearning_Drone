@@ -13,15 +13,16 @@ class Unicycle:
         self.dt = dt
 
         # Local parameters
-        self.init_r = 0.5           # initial wheel radius
-        self.init_i_y = 1           # initial wheel rotational inertia around y-axis
-        self.init_i_z = 10          # initial wheel rotational inertia around z-axis
+        self.init_r = 0.3           # initial wheel radius
+        self.init_m = 20            # initial mass
+        self.init_i_y = self.init_m * self.init_r ** 2      # initial wheel rotational inertia around y-axis
+        self.init_i_z = self.init_m * self.init_r ** 2 / 2  # initial wheel rotational inertia around z-axis
         self.r = self.init_r        # actual wheel radius
         self.i_y = self.init_i_y    # actual wheel rotational inertia around y-axis
         self.i_z = self.init_i_z    # actual wheel rotational inertia around z-axis
 
         # Bounds
-        self.max_input = 1000  # input
+        self.max_input = 50  # input
         self.max_acceleration = 100  # acceleration
         self.max_velocity = 10  # velocity
 

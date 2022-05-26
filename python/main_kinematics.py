@@ -13,19 +13,18 @@ from utils.show import show_plots, show_animation
 # Parameters
 
 collect_data = False  # True - collect data, False - test performance
-controller = 2  # 0 - random, 1 - PID, 2 - DNN, 3 - inverse
-online_learning = True  # For DNN (controller = 2): True - enable online learning, False - disable online learning
+controller = 4  # 0 - random, 1 - PID, 2 - inverse, 3 - DNN0, 4 - DNN + CL
 trajectory = 2  # 0 - random points, 1 - circular, 2 - 8-shaped, 3 - set-point, 4 - square-wave
-uncertainty = -1  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half;
+uncertainty = 1  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half;
 # default = 1
-disturbance = -2  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
+disturbance = -50  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
 # default = -2
-noise = 0.0  # measurement noise standard deviation: 0 - no noise, >0 - white noise
+noise = 0  # measurement noise standard deviation: 0 - no noise, >0 - white noise
 # default = 0.0001
 
 animation = False  # True - enable online animation, False - disable online animation
 
-k_end = 10000
+k_end = 6000
 dt = 0.001
 
 if collect_data:
@@ -63,6 +62,7 @@ if trajectory == 0:  # random points (for collecting training data)
 if trajectory == 1:  # circular
     reference = np.column_stack([2 * np.cos(2 * t), -2 * np.sin(2 * t), np.zeros((k_end + 1, 1))])
 if trajectory == 2:  # 8-shaped
+    t -= 0*np.pi/2
     reference = np.column_stack([
         4 / (3 - np.cos(2 * t)) * np.cos(t),
         4 / (3 - np.cos(2 * t)) * np.sin(-2 * t) / np.sqrt(2),
@@ -86,21 +86,26 @@ inverse = Inverse(unicycle)
 
 time_pid = 0
 time_inverse = 0
+time_dnn0 = 0
 time_dnn = 0
 for k in range(1, k_end - 1):
 
     # Unicycle control
     if collect_data:
-        command_random[k, :] = np.random.uniform(-10, 10, 2)
+        command_random[k, :] = np.random.uniform(-100, 100, 2)
     else:
         time_start = time.time()
         command_pid[k, :] = pid.control(pose[k, :], reference[k, :])
         time_pid += (time.time() - time_start)
+
         time_start = time.time()
         command_dnn[k, :] = dnn.control(pose[k, :], reference[k + 1, :])
-        if online_learning and k > 0:
+        time_dnn0 += (time.time() - time_start)
+        if controller == 4 and k > 0:
+            time_start = time.time()
             dnn.learn(pose[k, :], pose[k - 1, :], command[k - 1, :])
-        time_dnn += (time.time() - time_start)
+            time_dnn += (time.time() - time_start)
+
         time_start = time.time()
         command_inverse[k, :] = inverse.control(pose[k, :], reference[k + 1, :])
         time_inverse += (time.time() - time_start)
@@ -112,10 +117,10 @@ for k in range(1, k_end - 1):
             command[k, :] = command_pid[k, :]
         else:
             if controller == 2:
-                command[k, :] = command_dnn[k, :]
+                command[k, :] = command_inverse[k, :]
             else:
-                if controller == 3:
-                    command[k, :] = command_inverse[k, :]
+                if controller == 3 or controller == 4:
+                    command[k, :] = command_dnn[k, :]
 
     # Simulate unicycle
     if k < k_end * 1 / 4:
@@ -133,14 +138,15 @@ for k in range(1, k_end - 1):
     if animation:
         show_animation(pose[:k + 1], reference[:k + 1])
 
-print('PID time: %.3f ms' % (time_pid/k_end*1000))
-print('Inverse time: %.3f ms' % (time_inverse/k_end*1000))
-print('DNN time: %.3f ms' % (time_dnn/k_end*1000))
+print('PID time: %.3f ms' % (time_pid / k_end * 1000))
+print('Inverse time: %.3f ms' % (time_inverse / k_end * 1000))
+print('DNN0 time: %.3f ms' % (time_dnn0 / k_end*1000))
+print('DNN time: %.3f ms' % ((time_dnn + time_dnn0) / k_end*1000))
 
 # Save results
 
 if collect_data:
-    save_data_kinematics(t, reference, pose, command, 'unicycle_kinematics_random')
+    save_data_kinematics(t, reference, pose, command, 'unicycle_kinematics_random_bound100')
 
 # Plot results
 
