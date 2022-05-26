@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from termcolor import colored
 
+from kinematics.unicycle_kinematics import Unicycle
+
 
 def show_plots(t, pose, trajectory, command, command_dnn, command_inverse):
 
@@ -22,12 +24,18 @@ def show_plots(t, pose, trajectory, command, command_dnn, command_inverse):
 
     # Compute difference to the analytical inverse
 
-    command[:, 0] = np.clip(command[:, 0], -10, 20)
-    command[:, 1] = np.clip(command[:, 1], -90, 90)
-    command_dnn[:, 0] = np.clip(command_dnn[:, 0], -10, 20)
-    command_dnn[:, 1] = np.clip(command_dnn[:, 1], -90, 90)
-    command_inverse[:, 0] = np.clip(command_inverse[:, 0], -10, 20)
-    command_inverse[:, 1] = np.clip(command_inverse[:, 1], -90, 90)
+    unicycle = Unicycle(0)
+    command1_min = -unicycle.max_w_y / 2
+    command1_max = unicycle.max_w_y
+    command2_min = -unicycle.max_w_z
+    command2_max = unicycle.max_w_z
+
+    command[:, 0] = np.clip(command[:, 0], command1_min, command1_max)
+    command[:, 1] = np.clip(command[:, 1], command2_min, command2_max)
+    command_dnn[:, 0] = np.clip(command_dnn[:, 0], command1_min, command1_max)
+    command_dnn[:, 1] = np.clip(command_dnn[:, 1], command2_min, command2_max)
+    command_inverse[:, 0] = np.clip(command_inverse[:, 0], command1_min, command1_max)
+    command_inverse[:, 1] = np.clip(command_inverse[:, 1], command2_min, command2_max)
 
     approximation_difference1 = np.mean(np.abs(command_dnn[:-2, 0] - command_inverse[:-2, 0]))
     approximation_difference2 = np.mean(np.abs(command_dnn[:-2, 1] - command_inverse[:-2, 1]))
@@ -39,10 +47,13 @@ def show_plots(t, pose, trajectory, command, command_dnn, command_inverse):
     plt.title('2D Trajectory')
     plt.scatter(pose[0, 0], pose[0, 1], c='r', marker='o')
     plt.scatter(pose[-2, 0], pose[-2, 1], c='b', marker='o')
-    plt.scatter(pose[int(len(pose) * 1 / 4), 0], pose[int(len(pose) * 1 / 4), 1], c='r', marker='X')
-    plt.scatter(pose[int(len(pose) * 2 / 4), 0], pose[int(len(pose) * 2 / 4), 1], c='r', marker='X')
-    plt.scatter(pose[int(len(pose) * 3 / 4), 0], pose[int(len(pose) * 3 / 4), 1], c='r', marker='X')
-    plt.plot(trajectory[:, 0], trajectory[:, 1], 'g--', label="desired")
+    plt.scatter(pose[int(len(pose) * 1 / 7), 0], pose[int(len(pose) * 1 / 7), 1], c='r', marker='X')
+    plt.scatter(pose[int(len(pose) * 2 / 7), 0], pose[int(len(pose) * 2 / 7), 1], c='r', marker='X')
+    plt.scatter(pose[int(len(pose) * 3 / 7), 0], pose[int(len(pose) * 3 / 7), 1], c='r', marker='X')
+    plt.scatter(pose[int(len(pose) * 4 / 7), 0], pose[int(len(pose) * 4 / 7), 1], c='g', marker='X')
+    plt.scatter(pose[int(len(pose) * 5 / 7), 0], pose[int(len(pose) * 5 / 7), 1], c='g', marker='X')
+    plt.scatter(pose[int(len(pose) * 6 / 7), 0], pose[int(len(pose) * 6 / 7), 1], c='g', marker='X')
+    plt.plot(trajectory[:, 0], trajectory[:, 1], 'k--', label="desired")
     plt.plot(pose[:-1, 0], pose[:-1, 1], 'b', label="actual")
     #plt.scatter(rotate_x, rotate_y, c='r', marker='X')
     plt.xlabel('x [m]')
@@ -55,10 +66,13 @@ def show_plots(t, pose, trajectory, command, command_dnn, command_inverse):
 
     plt.figure(2)
     plt.title('x Tracking')
-    plt.plot([t[-1] * 1 / 4, t[-1] * 1 / 4], [-2, 2], 'r:')
-    plt.plot([t[-1] * 2 / 4, t[-1] * 2 / 4], [-2, 2], 'r:')
-    plt.plot([t[-1] * 3 / 4, t[-1] * 3 / 4], [-2, 2], 'r:')
-    plt.plot(t, trajectory[:, 0], 'g--', label="desired")
+    plt.plot([t[-1] * 1 / 7, t[-1] * 1 / 7], [-2, 2], 'r:')
+    plt.plot([t[-1] * 2 / 7, t[-1] * 2 / 7], [-2, 2], 'r:')
+    plt.plot([t[-1] * 3 / 7, t[-1] * 3 / 7], [-2, 2], 'r:')
+    plt.plot([t[-1] * 4 / 7, t[-1] * 4 / 7], [-2, 2], 'r:')
+    plt.plot([t[-1] * 5 / 7, t[-1] * 5 / 7], [-2, 2], 'r:')
+    plt.plot([t[-1] * 6 / 7, t[-1] * 6 / 7], [-2, 2], 'r:')
+    plt.plot(t, trajectory[:, 0], 'k--', label="desired")
     plt.plot(t[:-1], pose[:-1, 0], 'b', label="actual")
     plt.xlabel('t [s]')
     plt.ylabel('x [m]')
@@ -70,10 +84,13 @@ def show_plots(t, pose, trajectory, command, command_dnn, command_inverse):
 
     plt.figure(3)
     plt.title('y Tracking')
-    plt.plot([t[-1] * 1 / 4, t[-1] * 1 / 4], [-2, 2], 'r:')
-    plt.plot([t[-1] * 2 / 4, t[-1] * 2 / 4], [-2, 2], 'r:')
-    plt.plot([t[-1] * 3 / 4, t[-1] * 3 / 4], [-2, 2], 'r:')
-    plt.plot(t, trajectory[:, 1], 'g--', label="desired")
+    plt.plot([t[-1] * 1 / 7, t[-1] * 1 / 7], [-1, 1], 'r:')
+    plt.plot([t[-1] * 2 / 7, t[-1] * 2 / 7], [-1, 1], 'r:')
+    plt.plot([t[-1] * 3 / 7, t[-1] * 3 / 7], [-1, 1], 'r:')
+    plt.plot([t[-1] * 4 / 7, t[-1] * 4 / 7], [-1, 1], 'r:')
+    plt.plot([t[-1] * 5 / 7, t[-1] * 5 / 7], [-1, 1], 'r:')
+    plt.plot([t[-1] * 6 / 7, t[-1] * 6 / 7], [-1, 1], 'r:')
+    plt.plot(t, trajectory[:, 1], 'k--', label="desired")
     plt.plot(t[:-1], pose[:-1, 1], 'b', label="actual")
     plt.xlabel('t [s]')
     plt.ylabel('y [m]')
@@ -111,11 +128,14 @@ def show_plots(t, pose, trajectory, command, command_dnn, command_inverse):
 
     plt.figure(31)
     plt.title('Control Input')
-    plt.plot(t[:-2], command_inverse[:-2, 0], 'g', label="inverse")
+    plt.plot(t[:-2], command_inverse[:-2, 0], 'c', label="inverse")
     plt.plot(t[:-2], command[:-2, 0], 'b', label="actual")
-    plt.plot([t[-1] * 1 / 4, t[-1] * 1 / 4], [-10, 10], 'r:')
-    plt.plot([t[-1] * 2 / 4, t[-1] * 2 / 4], [-10, 10], 'r:')
-    plt.plot([t[-1] * 3 / 4, t[-1] * 3 / 4], [-10, 10], 'r:')
+    plt.plot([t[-1] * 1 / 7, t[-1] * 1 / 7], [command1_min, command1_max], 'r:')
+    plt.plot([t[-1] * 2 / 7, t[-1] * 2 / 7], [command1_min, command1_max], 'r:')
+    plt.plot([t[-1] * 3 / 7, t[-1] * 3 / 7], [command1_min, command1_max], 'r:')
+    plt.plot([t[-1] * 4 / 7, t[-1] * 4 / 7], [command1_min, command1_max], 'g:')
+    plt.plot([t[-1] * 5 / 7, t[-1] * 5 / 7], [command1_min, command1_max], 'g:')
+    plt.plot([t[-1] * 6 / 7, t[-1] * 6 / 7], [command1_min, command1_max], 'g:')
     plt.xlabel('t [s]')
     plt.ylabel('w_y [rad/s]')
     plt.legend()
@@ -123,11 +143,14 @@ def show_plots(t, pose, trajectory, command, command_dnn, command_inverse):
 
     plt.figure(32)
     plt.title('Control Input')
-    plt.plot(t[:-2], command_inverse[:-2, 1], 'g', label="inverse")
+    plt.plot(t[:-2], command_inverse[:-2, 1], 'c', label="inverse")
     plt.plot(t[:-2], command[:-2, 1], 'b', label="actual")
-    plt.plot([t[-1] * 1 / 4, t[-1] * 1 / 4], [-10, 10], 'r:')
-    plt.plot([t[-1] * 2 / 4, t[-1] * 2 / 4], [-10, 10], 'r:')
-    plt.plot([t[-1] * 3 / 4, t[-1] * 3 / 4], [-10, 10], 'r:')
+    plt.plot([t[-1] * 1 / 7, t[-1] * 1 / 7], [command2_min, command2_max], 'r:')
+    plt.plot([t[-1] * 2 / 7, t[-1] * 2 / 7], [command2_min, command2_max], 'r:')
+    plt.plot([t[-1] * 3 / 7, t[-1] * 3 / 7], [command2_min, command2_max], 'r:')
+    plt.plot([t[-1] * 4 / 7, t[-1] * 4 / 7], [command2_min, command2_max], 'g:')
+    plt.plot([t[-1] * 5 / 7, t[-1] * 5 / 7], [command2_min, command2_max], 'g:')
+    plt.plot([t[-1] * 6 / 7, t[-1] * 6 / 7], [command2_min, command2_max], 'g:')
     plt.xlabel('t [s]')
     plt.ylabel('w_z [rad/s]')
     plt.legend()

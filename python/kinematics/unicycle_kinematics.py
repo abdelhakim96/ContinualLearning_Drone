@@ -17,8 +17,8 @@ class Unicycle:
         self.r = self.init_r  # actual wheel radius
 
         # Bounds
-        self.max_w_y = 100  # for input 1
-        self.max_w_z = 100  # for input 2
+        self.max_w_y = 90  # for input 1
+        self.max_w_z = 90  # for input 2
 
         # Initialize state
         self.state = np.zeros(3)

@@ -17,19 +17,20 @@ controller = 4  # 0 - random, 1 - PID, 2 - inverse, 3 - DNN0, 4 - DNN + CL
 trajectory = 2  # 0 - random points, 1 - circular, 2 - 8-shaped, 3 - set-point, 4 - square-wave
 uncertainty = 1  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half;
 # default = 1
-disturbance = -50  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
+disturbance = -10  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
 # default = -2
 noise = 0  # measurement noise standard deviation: 0 - no noise, >0 - white noise
 # default = 0.0001
 
 animation = False  # True - enable online animation, False - disable online animation
 
+dnn_name = 'dnn_kinematics_32'
+
 k_end = 6000
 dt = 0.001
 
 if collect_data:
     controller = 0
-    online_learning = False
     trajectory = 0
     uncertainty = 0
     disturbance = 0
@@ -79,7 +80,7 @@ if trajectory == 4:  # square-wave
 unicycle = Unicycle(dt, [x_init, y_init, yaw_init])
 
 pid = PID(dt)
-dnn = DNN(dt, 'dnn_kinematics_32')
+dnn = DNN(dt, dnn_name)
 inverse = Inverse(unicycle)
 
 # Main loop
@@ -92,7 +93,8 @@ for k in range(1, k_end - 1):
 
     # Unicycle control
     if collect_data:
-        command_random[k, :] = np.random.uniform(-100, 100, 2)
+        command_random[k, 0] = np.random.uniform(-10, 20, 1)
+        command_random[k, 1] = np.random.uniform(-90, 90, 1)
     else:
         time_start = time.time()
         command_pid[k, :] = pid.control(pose[k, :], reference[k, :])
@@ -123,20 +125,31 @@ for k in range(1, k_end - 1):
                     command[k, :] = command_dnn[k, :]
 
     # Simulate unicycle
-    if k < k_end * 1 / 4:
-        pose[k + 1, :], pose_real[k + 1, :] = unicycle.simulate(command[k, :], 0, 0, 0)
-    else:
-        if k < k_end * 2 / 4:
-            pose[k + 1, :], pose_real[k + 1, :] = unicycle.simulate(command[k, :], 0, 0, noise)
-        else:
-            if k < k_end * 3 / 4:
-                pose[k + 1, :], pose_real[k + 1, :] = unicycle.simulate(command[k, :], uncertainty, 0, noise)
-            else:
-                pose[k + 1, :], pose_real[k + 1, :] = unicycle.simulate(command[k, :], uncertainty, disturbance, noise)
+    if k < k_end * 1 / 7:
+        pose[k + 1, :], pose_real[k + 1, :] = unicycle.simulate(command[k, :], 0.0, 0.0, 0.0)
+    if k_end * 1 / 7 <= k < k_end * 2 / 7:
+        pose[k + 1, :], pose_real[k + 1, :] = unicycle.simulate(command[k, :], 0.0, 0.0, noise)
+    if k_end * 2 / 7 <= k < k_end * 3 / 7:
+        pose[k + 1, :], pose_real[k + 1, :] = unicycle.simulate(command[k, :], uncertainty, 0.0, noise)
+    if k_end * 3 / 7 <= k < k_end * 4 / 7:
+        pose[k + 1, :], pose_real[k + 1, :] = unicycle.simulate(command[k, :], uncertainty, disturbance, noise)
+    if k_end * 4 / 7 <= k < k_end * 5 / 7:
+        pose[k + 1, :], pose_real[k + 1, :] = unicycle.simulate(command[k, :], uncertainty, 0.0, noise)
+    if k_end * 5 / 7 <= k < k_end * 6 / 7:
+        pose[k + 1, :], pose_real[k + 1, :] = unicycle.simulate(command[k, :], 0.0, 0.0, noise)
+    if k_end * 6 / 7 <= k:
+        pose[k + 1, :], pose_real[k + 1, :] = unicycle.simulate(command[k, :], 0.0, 0.0, 0.0)
 
     # Animation
     if animation:
         show_animation(pose[:k + 1], reference[:k + 1])
+
+# Save online DNN
+
+if controller == 4:
+    dnn.save('new_' + dnn_name)
+
+# Computational time
 
 print('PID time: %.3f ms' % (time_pid / k_end * 1000))
 print('Inverse time: %.3f ms' % (time_inverse / k_end * 1000))
@@ -146,7 +159,7 @@ print('DNN time: %.3f ms' % ((time_dnn + time_dnn0) / k_end*1000))
 # Save results
 
 if collect_data:
-    save_data_kinematics(t, reference, pose, command, 'unicycle_kinematics_random_bound100')
+    save_data_kinematics(t, reference, pose, command, 'unicycle_kinematics_random_bound20_100')
 
 # Plot results
 

@@ -102,10 +102,10 @@ class DNN:
                                       mem_iters=1)
 
         # Initialise cache and buffer with random samples
-        dataset = pd.read_csv('data/dataset_' + dataset_name + '.csv')
+        dataset = pd.read_csv('data/dataset_' + dataset_name + '_smaller.csv')
         random_indices = np.random.randint(len(dataset), size=buffer_size)
         random_samples = dataset[['sin', 'cos', 'diff_x', 'diff_y', 'diff_yaw', 'w_y', 'w_z']].values[random_indices]
-        #random_samples = dataset.values  # FOR TESTING
+        random_samples = dataset.values  # FOR TESTING
 
         # Save smaller dataset
         df = pd.DataFrame(data=random_samples, columns=['sin', 'cos', 'diff_x', 'diff_y', 'diff_yaw', 'w_y', 'w_z'])
@@ -224,3 +224,6 @@ class DNN:
 
         # Update the buffer with the incoming sample.
         self.buffer.reservoir_update(dnn_input, dnn_output)
+
+    def save(self, dnn_name):
+        torch.save(self.model.state_dict(), 'models/' + dnn_name + '.pth')
