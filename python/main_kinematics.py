@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 from kinematics.pid_kinematics import PID
-from kinematics.dnn_kinematics import DNN
+from kinematics.dnn_kinematics_divided import DNN
 from kinematics.inverse_kinematics import Inverse
 from kinematics.unicycle_kinematics import Unicycle
 from utils.save_data import save_data_kinematics
@@ -15,11 +15,11 @@ from utils.show import show_plots, show_animation
 collect_data = False  # True - collect data, False - test performance
 controller = 4  # 0 - random, 1 - PID, 2 - inverse, 3 - DNN0, 4 - DNN + CL
 trajectory = 2  # 0 - random points, 1 - circular, 2 - 8-shaped, 3 - set-point, 4 - square-wave
-uncertainty = 1  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half;
+uncertainty = -1  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half;
 # default = 1
-disturbance = -10  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
-# default = -2
-noise = 0  # measurement noise standard deviation: 0 - no noise, >0 - white noise
+disturbance = 10  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
+# default = 20
+noise = 0.0  # measurement noise standard deviation: 0 - no noise, >0 - white noise
 # default = 0.0001
 
 animation = False  # True - enable online animation, False - disable online animation

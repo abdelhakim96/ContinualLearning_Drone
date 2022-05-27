@@ -17,7 +17,7 @@ class Unicycle:
         self.r = self.init_r  # actual wheel radius
 
         # Bounds
-        self.max_w_y = 90  # for input 1
+        self.max_w_y = 20  # for input 1
         self.max_w_z = 90  # for input 2
 
         # Initialize state
@@ -26,7 +26,7 @@ class Unicycle:
         self.state[1] = init[0]
         self.state[2] = init[0]
 
-        self.disturbance = 0
+        self.disturbance = [0, 0, 0]
         self.noise = [0, 0, 0]
 
     def get_state(self):
@@ -36,23 +36,26 @@ class Unicycle:
         if command is None:
             command = [0, 0]
 
-        self.disturbance = disturbance
+        self.disturbance = [disturbance * self.max_w_y * self.init_r / 100,
+                            -disturbance * self.max_w_y * self.init_r / 100,
+                            disturbance * self.max_w_z / 100]
 
         # Get parameters
         self.r = self.init_r * 2 ** uncertainty
 
         # Bound commands
-        w_y = min(max(command[0], -self.max_w_y/2), self.max_w_y) + disturbance
-        w_z = min(max(command[1], -self.max_w_z), self.max_w_z) + disturbance
+        w_y = min(max(command[0], -self.max_w_y/2), self.max_w_y)
+        w_z = min(max(command[1], -self.max_w_z), self.max_w_z)
 
         # System dynamics
         dstate = np.zeros(3)
         dstate[0] = np.cos(self.state[2]) * self.r * w_y
         dstate[1] = np.sin(self.state[2]) * self.r * w_y
         dstate[2] = w_z
+        dstate += self.disturbance
 
         # update state
-        self.state = self.state + self.dt * dstate
+        self.state = self.state + dstate * self.dt
 
         # normalise orientation between [-pi and pi]
         if np.abs(self.state[2]) > np.pi:

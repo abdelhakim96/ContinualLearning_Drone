@@ -10,7 +10,7 @@ class Buffer(torch.nn.Module):
     Totally online, and there is no concept of "task" here.
     Regression, no classes.
     """
-    def __init__(self, model, buffer_size):
+    def __init__(self, model, buffer_size, input_size, output_size):
         super().__init__()
 
         self.model = model
@@ -19,9 +19,6 @@ class Buffer(torch.nn.Module):
         self.current_index = 0
         self.n_seen_so_far = 0
 
-        print('buffer has %d slots' % buffer_size)
-        input_size = 5
-        output_size = 2
         buffer_input = torch.FloatTensor(buffer_size, input_size).fill_(0)
         buffer_target = torch.FloatTensor(buffer_size, output_size).fill_(0)
 

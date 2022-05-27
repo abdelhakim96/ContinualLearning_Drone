@@ -17,10 +17,10 @@ device = 'cpu'
 typeAction = 1  # 1 - train, 2 - test, 3 - train more
 typeScaling = 1  # 0 - no scaling, 1 - standardization, 2 - normalization
 
-numHiddenUnits = [32, 32]
+numHiddenUnits = [32]
 maxEpochs = 100
 
-datasetName = 'unicycle_kinematics_random_bound100'
+datasetName = 'unicycle_kinematics_random_bound20_100'
 
 trainingPercentage = 0.9
 validationPercentage = 0.1
