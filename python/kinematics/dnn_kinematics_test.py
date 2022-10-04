@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from kinematics.dnn_kinematics import DNN
+from kinematics.dnn_er_kinematics import DNN
 from kinematics.inverse_kinematics import Inverse
 from kinematics.unicycle_kinematics import Unicycle
 

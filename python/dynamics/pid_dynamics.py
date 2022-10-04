@@ -34,7 +34,7 @@ class PID:
         self.ie_v = 0
         self.ie_w = 0
 
-    def control(self, pose, trajectory):
+    def control(self, pose, reference):
 
         # Actual state
 
@@ -44,16 +44,17 @@ class PID:
 
         # Reference values
 
-        x_ref = trajectory[0]
-        y_ref = trajectory[1]
+        x_ref = reference[0]
+        y_ref = reference[1]
 
         # Compute pose errors
 
         e_x = x_ref - x
         e_y = y_ref - y
-        yaw_ref = math.atan2(e_y, e_x)
-        # if np.abs(yaw_ref) > math.pi/2:
-        #     yaw_ref = yaw_ref + math.pi
+        if reference[2] == 0:
+            yaw_ref = math.atan2(e_y, e_x)
+        else:
+            yaw_ref = reference[2]
         e_yaw = yaw_ref - yaw
         if np.abs(e_yaw) > math.pi:
             e_yaw = yaw_ref - yaw - 2*math.pi*np.sign(e_yaw)

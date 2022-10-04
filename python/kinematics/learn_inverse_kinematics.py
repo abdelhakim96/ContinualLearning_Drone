@@ -17,10 +17,10 @@ device = 'cpu'
 typeAction = 1  # 1 - train, 2 - test, 3 - train more
 typeScaling = 1  # 0 - no scaling, 1 - standardization, 2 - normalization
 
-numHiddenUnits = [32, 32]
+numHiddenUnits = [32]
 maxEpochs = 100
 
-datasetName = 'unicycle_kinematics_random'
+datasetName = 'unicycle_kinematics_random_bound20_100'
 
 trainingPercentage = 0.9
 validationPercentage = 0.1
@@ -68,28 +68,28 @@ class UnicycleSimpleDataset(Dataset):
 
         # Plot histograms
 
-        # plt.figure(1)
-        # plt.title('sin')
-        # plt.hist(data[['sin']].values)
-        # plt.figure(2)
-        # plt.title('cos')
-        # plt.hist(data[['cos']].values)
-        # plt.figure(3)
-        # plt.title('diff_x')
-        # plt.hist(data[['diff_x']].values)
-        # plt.figure(4)
-        # plt.title('diff_y')
-        # plt.hist(data[['diff_y']].values)
-        # plt.figure(5)
-        # plt.title('diff_yaw')
-        # plt.hist(data[['diff_yaw']].values)
-        # plt.figure(6)
-        # plt.title('w_y')
-        # plt.hist(data[['w_y']].values)
-        # plt.figure(7)
-        # plt.title('w_z')
-        # plt.hist(data[['w_z']].values)
-        # plt.show()
+        plt.figure(1)
+        plt.title('sin')
+        plt.hist(data[['sin']].values)
+        plt.figure(2)
+        plt.title('cos')
+        plt.hist(data[['cos']].values)
+        plt.figure(3)
+        plt.title('diff_x')
+        plt.hist(data[['diff_x']].values)
+        plt.figure(4)
+        plt.title('diff_y')
+        plt.hist(data[['diff_y']].values)
+        plt.figure(5)
+        plt.title('diff_yaw')
+        plt.hist(data[['diff_yaw']].values)
+        plt.figure(6)
+        plt.title('w_y')
+        plt.hist(data[['w_y']].values)
+        plt.figure(7)
+        plt.title('w_z')
+        plt.hist(data[['w_z']].values)
+        plt.show()
 
         # Define inputs and outputs to the network
 
@@ -210,18 +210,18 @@ if __name__ == '__main__':
 
     # Save model
 
-    # torch.save(model.state_dict(), '../models/' + networkName + '.pth')
-    # torch.save(optimizer.state_dict(), '../models/optimiser_' + networkName + '.pth')
+    torch.save(model.state_dict(), '../models/' + networkName + '.pth')
+    torch.save(optimizer.state_dict(), '../models/optimiser_' + networkName + '.pth')
 
     # Plot losses
 
-    # plt.figure()
-    # plt.title("Training and Validation Loss")
-    # plt.plot(train_losses, label="train")
-    # plt.plot(validation_losses, label="validation")
-    # plt.xlabel("Iteration")
-    # plt.ylabel("Loss")
-    # plt.grid()
-    # plt.legend()
-    # plt.show()
+    plt.figure()
+    plt.title("Training and Validation Loss")
+    plt.plot(train_losses, label="train")
+    plt.plot(validation_losses, label="validation")
+    plt.xlabel("Iteration")
+    plt.ylabel("Loss")
+    plt.grid()
+    plt.legend()
+    plt.show()
 

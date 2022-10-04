@@ -11,13 +11,13 @@ class PID:
 
         # Gains
         # position
-        self.kp_p = 200
-        self.kp_i = 20
-        self.kp_d = 0.2
+        self.kp_p = 100
+        self.kp_i = 10
+        self.kp_d = 0
         # orientation
-        self.ko_p = 100
-        self.ko_i = 1
-        self.ko_d = 0.01
+        self.ko_p = 1000
+        self.ko_i = 100
+        self.ko_d = 0.1
 
         self.old_pose = np.zeros((3, 1))
         self.i_distance = 0
@@ -65,6 +65,5 @@ class PID:
         v_ref = self.kp_p*distance + self.kp_i*self.i_distance + self.kp_d*v
         w_ref = self.ko_p*e_yaw + self.ko_i*self.ie_yaw + self.ko_d*w
 
-        trajectory[2] = yaw_ref  # for debug
         command = np.ravel(np.array([v_ref, w_ref], dtype=object))
         return command

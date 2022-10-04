@@ -17,10 +17,10 @@ device = 'cpu'
 typeAction = 1  # 1 - train, 2 - test, 3 - train more
 typeScaling = 1  # 0 - no scaling, 1 - standardization, 2 - normalization
 
-numHiddenUnits = [512, 512, 512]
-maxEpochs = 1000
+numHiddenUnits = [128, 128, 128]
+maxEpochs = 200
 
-datasetName = 'unicycle_dynamics_random'
+datasetName = 'unicycle_dynamics_random_bound100'
 
 trainingPercentage = 0.9
 validationPercentage = 0.1
@@ -48,8 +48,8 @@ class UnicycleDataset(Dataset):
             (np.abs(data[['diff_yaw']].values) > math.pi) * 2 * math.pi * np.sign(data[['diff_yaw']].values)
 
         # clip control inputs
-        data['tau_y'] = np.clip(data['tau_y'].values, -1000, 1000)
-        data['tau_z'] = np.clip(data['tau_z'].values, -1000, 1000)
+        data['tau_y'] = np.clip(data['tau_y'].values, -100, 100)
+        data['tau_z'] = np.clip(data['tau_z'].values, -100, 100)
 
         # remove NaN values
         data.drop(data.tail(2).index, inplace=True)

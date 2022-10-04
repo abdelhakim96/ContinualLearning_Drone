@@ -43,7 +43,7 @@ def data_engineering(dt, pose, command):
     return data
 
 
-def get_velocity2(dt, pose):
+def get_velocities2(dt, pose):
     size = len(pose)
 
     # Derive linear velocities
@@ -68,6 +68,11 @@ def get_velocity2(dt, pose):
     w /= dt
 
     return np.column_stack([v, w])
+
+
+def get_velocity2(dt, pose):
+    velocity = get_velocities2(dt, pose)
+    return velocity[0, :]
 
 
 def get_velocity3(dt, pose):

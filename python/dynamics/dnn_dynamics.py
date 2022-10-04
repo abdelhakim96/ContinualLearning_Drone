@@ -21,8 +21,9 @@ class DNN:
         self.data_min = np.array(data[3][1:], dtype=np.float32)
         self.data_max = np.array(data[4][1:], dtype=np.float32)
         self.type_scaling = int(data[6][1])
-        self.num_inputs = int(data[7][1])
-        self.num_outputs = int(data[8][1])
+
+        self.num_inputs = 7
+        self.num_outputs = 2
 
         num_hidden_units = []
         num = ''
@@ -44,6 +45,12 @@ class DNN:
 
         self.old_pose = np.zeros((3, 1))
 
+    def get_data_min(self):
+        return self.data_min
+
+    def get_data_max(self):
+        return self.data_max
+
     def control(self, pose, trajectory):
 
         # Actual state
@@ -57,7 +64,7 @@ class DNN:
         diff_x = trajectory[0] - x
         diff_y = trajectory[1] - y
 
-        diff_yaw = math.atan2(diff_x, diff_y) - yaw
+        diff_yaw = math.atan2(diff_y, diff_x) - yaw
         diff_yaw -= (abs(diff_yaw) > math.pi) * 2 * math.pi * np.sign(diff_yaw)
 
         # Compute velocities
@@ -77,6 +84,7 @@ class DNN:
 
         # Compute inputs to DNN
         dnn_input = np.array([np.sin(yaw), np.cos(yaw), v.item(), w.item(), diff_x, diff_y, diff_yaw])
+        # dnn_input = np.array([np.sin(yaw), np.cos(yaw), 0, 0, diff_x, diff_y, diff_yaw])
         dnn_input = np.minimum(np.maximum(dnn_input, self.data_min[:self.num_inputs]), self.data_max[:self.num_inputs])
 
         if self.type_scaling == 1:
