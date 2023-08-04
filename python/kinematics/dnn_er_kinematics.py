@@ -71,7 +71,7 @@ class DNN:
                                       mem_iters=1)
 
         # Initialise cache and buffer with random samples
-        dataset = pd.read_csv('data/dataset_' + datasetName + '.csv')
+        dataset = pd.read_csv('data/dataset_' + datasetName + '_smaller.csv')
         # np.random.seed(2022)  # FOR TESTING
         random_indices = np.random.randint(len(dataset), size=buffer_size)
         random_samples = dataset[['sin', 'cos', 'diff_x', 'diff_y', 'diff_yaw', 'w_y', 'w_z']].values[random_indices]

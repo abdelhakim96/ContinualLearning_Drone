@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 # Parameters
 
-device = 'cpu'
+device = 'cuda'  # 'cpu' or 'cuda'
 
 typeAction = 1  # 1 - train, 2 - test, 3 - train more
 typeScaling = 1  # 0 - no scaling, 1 - standardization, 2 - normalization
@@ -20,7 +20,7 @@ typeScaling = 1  # 0 - no scaling, 1 - standardization, 2 - normalization
 numHiddenUnits = [128, 128, 128]
 maxEpochs = 200
 
-datasetName = 'unicycle_dynamics_random_bound100'
+datasetName = 'unicycle_dynamics_random'
 
 trainingPercentage = 0.9
 validationPercentage = 0.1

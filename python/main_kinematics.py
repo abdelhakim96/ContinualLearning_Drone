@@ -20,7 +20,7 @@ collect_data = False  # True - collect data, False - test performance
 controller = 5  # 0 - random, 1 - PID, 2 - inverse, 3 - DFNN,
 # 4 - DNN0, 5 - DNN+ER, 6 - DNN+AGEM, 7 - DNN+EWC, 8 - DNN+LwF
 trajectory = 2  # 0 - random points, 1 - circular, 2 - 8-shaped, 3 - set-point, 4 - square-wave
-uncertainty = -1  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half;
+uncertainty = 0  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half;
 # default = -1
 disturbance = 0  # external disturbance: 0 - no disturbance, >0 - positive disturbance, <0 - negative disturbance
 # default = 20
