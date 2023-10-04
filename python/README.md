@@ -26,9 +26,13 @@ This package has been tested with **python3** in **Ubuntu 22.04** and **Ubuntu 2
   
       pip install torch torchvision torchaudio
 
-- **termcolor** - color formatting in terminal
+- (optional) **termcolor** - color formatting in terminal
   
       pip install termcolor
+
+- (optional) **tensorboard** - tool for visualization during the learning
+  
+      pip install tensorboard
 
 ### Clone
 
