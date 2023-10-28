@@ -51,17 +51,21 @@ class PID:
 
         e_x = x_ref - x
         e_y = y_ref - y
-        if reference[2] == 0:
-            yaw_ref = math.atan2(e_y, e_x)
+        forward = 1
+        if e_x**2 + e_y**2 == 0:  # reached the desired position
+            yaw_ref = reference[2]  # align with the desired orientation
         else:
-            yaw_ref = reference[2]
+            yaw_ref = math.atan2(e_y, e_x)  # align with the desired position
+            if math.pi/2 < np.abs(yaw_ref - yaw) < 3*math.pi/2:
+                yaw_ref -= math.pi*np.sign(yaw_ref)
+                forward = -1
         e_yaw = yaw_ref - yaw
         if np.abs(e_yaw) > math.pi:
-            e_yaw = yaw_ref - yaw - 2*math.pi*np.sign(e_yaw)
+            e_yaw -= 2*math.pi*np.sign(e_yaw)
 
         # Pose controller
 
-        distance = np.cos(e_yaw)*np.sqrt(e_x**2 + e_y**2)
+        distance = forward*np.cos(e_yaw)*np.sqrt(e_x**2 + e_y**2)
         self.i_distance = min(max(self.i_distance + distance*self.dt, - 1), 1)
         self.ie_yaw = min(max(self.ie_yaw + e_yaw*self.dt, - 1), 1)
         vx = (pose[0] - self.old_pose[0])/self.dt

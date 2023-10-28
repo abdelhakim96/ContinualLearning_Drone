@@ -12,80 +12,81 @@ import matplotlib.pyplot as plt
 
 # Parameters
 
-device = 'cuda'  # 'cpu' or 'cuda'
+device = 'cpu'  # 'cpu' or 'cuda'
 
 typeAction = 1  # 1 - train, 2 - test, 3 - train more
 typeScaling = 1  # 0 - no scaling, 1 - standardization, 2 - normalization
 
-numHiddenUnits = [128, 128, 128]
-maxEpochs = 200
+numHiddenUnits = [100, 10]
+maxEpochs = 1000
 
-datasetName = 'unicycle_dynamics_random'
+datasetName = 'unicycle_dynamics_artificial'
 
-trainingPercentage = 0.9
-validationPercentage = 0.1
+trainingPercentage = 0.7
+validationPercentage = 0.3
 
+networkName = 'dnn_dynamics_' + 'x'.join([str(s) for s in numHiddenUnits])
 
 class UnicycleDataset(Dataset):
     def __init__(self, dataset_name, type_scaling):
 
         # Load dataset
 
-        data = pd.read_csv('../data/log_' + dataset_name + '.csv', usecols=['x', 'y', 'yaw', 'v', 'w', 'tau_y', 'tau_z'])
+        #data = pd.read_csv('../data/log_' + dataset_name + '.csv', usecols=['x', 'y', 'yaw', 'v', 'w', 'tau_y', 'tau_z'])
+        data = pd.read_csv('../data/log_' + dataset_name + '.csv', usecols=['yaw', 'e_x', 'e_y', 'e_yaw', 'v', 'w', 'tau_y', 'tau_z'])
 
         # Process data
 
-        # translation invariant: input = [x(k + 2) - x(k), y(k + 2) - y(k)];
-        data[['diff_x', 'diff_y']] = data[['x', 'y']].values[2:] - data[['x', 'y']][:-2]
+        # Position translation invariant: input = [x(k + 2) - x(k), y(k + 2) - y(k)];
+        # data['diff_x'] = np.zeros(data['x'].shape)
+        # data['diff_y'] = np.zeros(data['y'].shape)
+        # data['diff_x'][:-2] = data['x'].values[2:] - data['x'].values[:-2]
+        # data['diff_y'][:-2] = data['y'].values[2:] - data['y'].values[:-2]
 
-        # make orientation periodic with sin and cos
-        data['sin'] = np.sin(data['yaw'].values)
-        data['cos'] = np.cos(data['yaw'].values)
+        # Make orientation periodic with sin and cos
+        data['sin'] = np.sin(data['yaw'])
+        data['cos'] = np.cos(data['yaw'])
 
-        # rotation invariant
-        data[['diff_yaw']] = data[['yaw']].values[2:] - data[['yaw']][:-2]
-        data[['diff_yaw']] -= \
-            (np.abs(data[['diff_yaw']].values) > math.pi) * 2 * math.pi * np.sign(data[['diff_yaw']].values)
+        # # rotation invariant
+        # data[['diff_yaw']] = data[['yaw']].values[2:] - data[['yaw']][:-2]
+        # data[['diff_yaw']] -= \
+        #     (np.abs(data[['diff_yaw']].values) > math.pi) * 2 * math.pi * np.sign(data[['diff_yaw']].values)
 
-        # clip control inputs
-        data['tau_y'] = np.clip(data['tau_y'].values, -100, 100)
-        data['tau_z'] = np.clip(data['tau_z'].values, -100, 100)
+        data[['diff_x', 'diff_y', 'diff_yaw']] = data[['e_x', 'e_y', 'e_yaw']]
 
         # remove NaN values
         data.drop(data.tail(2).index, inplace=True)
 
         # Save dataset
-
-        header = ['sin', 'cos', 'v', 'w', 'diff_x', 'diff_y', 'diff_yaw', 'tau_y', 'tau_z']
+        header_input = ['diff_x', 'diff_y', 'sin', 'cos', 'v', 'w']
+        header_output = ['tau_y', 'tau_z']
+        header = header_input + header_output
         data[header].to_csv('../data/dataset_' + dataset_name + '.csv', index=False)
 
         # Plot histograms
 
-        plt.figure(1)
-        plt.title('yaw')
-        plt.hist(data[['yaw']].values)
-        plt.figure(3)
-        plt.title('diff_x')
-        plt.hist(data[['diff_x']].values)
-        plt.figure(4)
-        plt.title('diff_y')
-        plt.hist(data[['diff_y']].values)
-        plt.figure(5)
-        plt.title('diff_yaw')
-        plt.hist(data[['diff_yaw']].values)
-        plt.figure(6)
-        plt.title('v')
-        plt.hist(data[['v']].values)
-        plt.figure(7)
-        plt.title('w')
-        plt.hist(data[['w']].values)
-        plt.figure(8)
-        plt.title('tau_y')
-        plt.hist(data[['tau_y']].values)
-        plt.figure(9)
-        plt.title('tau_z')
-        plt.hist(data[['tau_z']].values)
-        plt.show()
+        # plt.figure(1)
+        # plt.title('diff_x')
+        # plt.hist(data['diff_x'])
+        # plt.figure(2)
+        # plt.title('diff_y')
+        # plt.hist(data[['diff_y']])
+        # plt.figure(3)
+        # plt.title('yaw')
+        # plt.hist(data[['yaw']])
+        # plt.figure(4)
+        # plt.title('v')
+        # plt.hist(data[['v']])
+        # plt.figure(5)
+        # plt.title('w')
+        # plt.hist(data[['w']])
+        # plt.figure(6)
+        # plt.title('tau_y')
+        # plt.hist(data[['tau_y']])
+        # plt.figure(7)
+        # plt.title('tau_z')
+        # plt.hist(data[['tau_z']])
+        # plt.show()
 
         # Data scaling
 
@@ -100,12 +101,12 @@ class UnicycleDataset(Dataset):
 
         # Define inputs and outputs to the network
 
-        self.input = data[['sin', 'cos', 'v', 'w', 'diff_x', 'diff_y', 'diff_yaw']].values
-        self.output = data[['tau_y', 'tau_z']].values
+        self.input = data[header_input].values
+        self.output = data[header_output].values
 
         # Save data information
 
-        with open('../models/data_properties_dynamics.csv', 'w', newline='') as f:
+        with open('../models/properties_' + networkName + '.csv', 'w', newline='') as f:
             writer = csv.writer(f, delimiter=',')
             writer.writerow(['property'] + header)
             writer.writerow(['mu'] + list(mu[header]))
@@ -132,10 +133,6 @@ class UnicycleDataset(Dataset):
 
 if __name__ == '__main__':
     start = time.time()
-
-    # Parameters
-
-    networkName = 'dnn_dynamics_' + 'x'.join([str(s) for s in numHiddenUnits])
 
     # Define dataset
 

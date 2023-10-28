@@ -43,6 +43,7 @@ def data_engineering(dt, pose, command):
     return data
 
 
+# Get linear and angular velocities in the body frame
 def get_velocities2(dt, pose):
     size = len(pose)
 
@@ -75,6 +76,7 @@ def get_velocity2(dt, pose):
     return velocity[0, :]
 
 
+# Get linear and angular velocities in the world frame
 def get_velocity3(dt, pose):
     size = len(pose)
 
@@ -83,7 +85,7 @@ def get_velocity3(dt, pose):
     vx = (pose[1:, 0] - pose[:-1, 0]) / dt
     vy = (pose[1:, 1] - pose[:-1, 1]) / dt
 
-    # Derive angular velocities
+    # Derive angular velocity
 
     wz = (pose[1:, 2] - pose[:-1, 2])
     for i in np.arange(size - 1):

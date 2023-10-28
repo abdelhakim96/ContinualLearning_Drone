@@ -2,7 +2,7 @@
 
 import numpy as np
 import pandas as pd
-from utils.data_engineering import data_engineering, get_velocity3, get_velocity2
+from utils.data_engineering import get_velocities2
 import matplotlib.pyplot as plt
 
 
@@ -11,7 +11,7 @@ def save_data_dynamics(t, trajectory, pose, command, name):
 
     # Log file
 
-    velocity = get_velocity2(dt, pose)
+    velocity = get_velocities2(dt, pose)
 
     data = np.column_stack([t[:-2], trajectory[:-2], pose[:-2], velocity[:-1], command[:-2]])
     header = ['time', 'x_d', 'y_d', 'yaw_d', 'x', 'y', 'yaw', 'v', 'w', 'tau_y', 'tau_z']

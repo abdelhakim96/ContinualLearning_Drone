@@ -20,6 +20,7 @@ class AnimationUnicycle:
         self.path_d, = self.ax.plot(reference[:, 0], reference[:, 1], 'g--', zorder=1)  # Returns a tuple of line objects, thus the comma
         self.path, = self.ax.plot([], [], 'b-', zorder=1)
         self.pose, = self.ax.plot([], [], 'b', lw=10, zorder=1)
+        self.front = self.ax.scatter([], [], s=10, c='w', zorder=2)
         self.reference = self.ax.scatter([], [], s=100, c='g', zorder=2)
         v = Arrow(0, 0, 0, 0, color='r')
         self.a_v = self.ax.add_patch(v)
@@ -34,6 +35,7 @@ class AnimationUnicycle:
         self.path.set_ydata(pose[:, 1])
         self.pose.set_xdata([pose[-1, 0] + 0.1 * np.cos(pose[-1, 2]), pose[-1, 0] - 0.1 * np.cos(pose[-1, 2])])
         self.pose.set_ydata([pose[-1, 1] + 0.1 * np.sin(pose[-1, 2]), pose[-1, 1] - 0.1 * np.sin(pose[-1, 2])])
+        self.front.set_offsets([pose[-1, 0] + 0.1 * np.cos(pose[-1, 2]), pose[-1, 1] + 0.1 * np.sin(pose[-1, 2])])
         self.reference.set_offsets(reference[:2])
 
         velocity = get_velocity2(0.001, pose[-2:, :])
@@ -47,6 +49,8 @@ class AnimationUnicycle:
                   velocity[1] / 9 * np.cos(pose[-1, 2] + np.pi/2), velocity[1] / 9 * np.sin(pose[-1, 2] + np.pi/2),
                   width=0.1, color='r', zorder=3)
         self.a_w = self.ax.add_patch(w)
+
+        print(command)
 
         self.tau_y.set_ydata([-1, -1 + np.clip(command[0], -100, 100) / 100])
         self.tau_z.set_xdata([0, np.clip(command[1], -100, 100) / 100])

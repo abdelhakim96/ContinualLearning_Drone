@@ -22,10 +22,10 @@ class Unicycle:
         self.i_z = self.init_i_z                            # actual wheel rotational inertia around z-axis
 
         # Bounds
-        self.max_tau_y = 100  # for input 1
-        self.max_tau_z = 100  # for input 2
+        self.max_tau_y = 100  # 100, for input 1
+        self.max_tau_z = 100  # 100, for input 2
         self.max_w_y = 20
-        self.max_w_z = 90
+        self.max_w_z = 20*np.pi
 
         # Initialize state
         self.state = np.zeros(5)
@@ -35,7 +35,7 @@ class Unicycle:
         self.state[3] = 0
         self.state[4] = 0
 
-        self.disturbance = [0, 0, 0]
+        self.disturbance = [0, 0]
         self.noise = [0, 0, 0]
 
     def __getstate__(self):
@@ -45,9 +45,8 @@ class Unicycle:
         if command is None:
             command = [0, 0]
 
-        self.disturbance = [disturbance * self.max_w_y * self.init_r / 100,
-                            -disturbance * self.max_w_y * self.init_r / 100,
-                            disturbance * self.max_w_z / 100]
+        self.disturbance = [disturbance * self.max_tau_y / 100,
+                            disturbance * self.max_tau_z / 100]
 
         # Get parameters
         self.r = self.init_r * 2 ** uncertainty
@@ -59,8 +58,12 @@ class Unicycle:
         tau_z = command[1]
 
         # Bound commands
-        tau_y = min(max(tau_y, -self.max_tau_y/2), self.max_tau_y)
-        tau_z = min(max(tau_z, -self.max_tau_z), self.max_tau_z)
+        tau_y = np.clip(tau_y, -self.max_tau_y/2, self.max_tau_y)
+        tau_z = np.clip(tau_z, -self.max_tau_z, self.max_tau_z)
+
+        # Add external disturbance
+        tau_y += self.disturbance[0]
+        tau_z += self.disturbance[1]
 
         # System dynamics
         dstate = np.zeros(5)
@@ -69,22 +72,17 @@ class Unicycle:
         dstate[2] = self.state[4]
         dstate[3] = 1 / self.i_y * tau_y
         dstate[4] = 1 / self.i_z * tau_z
-        dstate[0:3] += self.disturbance
 
-        # bound accelerations
-        # dstate[3] = min(max(dstate[3], -self.max_alpha_y/2), self.max_alpha_y)
-        # dstate[4] = min(max(dstate[4], -self.max_alpha_z), self.max_alpha_z)
-
-        # update state
+        # Update state
         self.state = self.state + self.dt * dstate
 
-        # normalise orientation between [-pi and pi]
+        # Normalise orientation between [-pi and pi]
         if np.abs(self.state[2]) > math.pi:
             self.state[2] -= 2 * math.pi * np.sign(self.state[2])
 
-        # bound velocities
-        self.state[3] = min(max(self.state[3], -self.max_w_y/2), self.max_w_y)
-        self.state[4] = min(max(self.state[4], -self.max_w_z), self.max_w_z)
+        # Bound velocities
+        self.state[3] = np.clip(self.state[3], -self.max_w_y/2, self.max_w_y)
+        self.state[4] = np.clip(self.state[4], -self.max_w_z, self.max_w_z)
 
         pose = self.state[:3]
         self.noise = np.random.normal(0, noise, 3)

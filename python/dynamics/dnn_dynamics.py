@@ -12,7 +12,7 @@ class DNN:
     def __init__(self, dt, model_name):
         self.dt = dt
 
-        with open('models/data_properties_dynamics.csv', 'r', newline='') as f:
+        with open('models/properties_' + model_name + '.csv', 'r', newline='') as f:
             data = list(csv.reader(f))
 
         self.variables = data[0][1:]
@@ -21,9 +21,8 @@ class DNN:
         self.data_min = np.array(data[3][1:], dtype=np.float32)
         self.data_max = np.array(data[4][1:], dtype=np.float32)
         self.type_scaling = int(data[6][1])
-
-        self.num_inputs = 7
-        self.num_outputs = 2
+        self.num_inputs = int(data[7][1])
+        self.num_outputs = int(data[8][1])
 
         num_hidden_units = []
         num = ''
@@ -76,23 +75,21 @@ class DNN:
             direction = 1
         else:
             direction = - 1
-        v = direction*np.sqrt(vx**2 + vy**2)
+        v = direction*np.sqrt(vx**2 + vy**2).item()
         if np.abs(pose[2] - self.old_pose[2]) > math.pi:
             self.old_pose[2] -= 2*math.pi*np.sign(self.old_pose[2])
-        w = (pose[2] - self.old_pose[2])/self.dt
+        w = (pose[2] - self.old_pose[2]).item()/self.dt
         self.old_pose = pose.copy()
 
         # Compute inputs to DNN
-        dnn_input = np.array([np.sin(yaw), np.cos(yaw), v.item(), w.item(), diff_x, diff_y, diff_yaw])
-        # dnn_input = np.array([np.sin(yaw), np.cos(yaw), 0, 0, diff_x, diff_y, diff_yaw])
+        dnn_input = np.array([diff_x, diff_y, np.sin(yaw), np.cos(yaw), v, w])
         dnn_input = np.minimum(np.maximum(dnn_input, self.data_min[:self.num_inputs]), self.data_max[:self.num_inputs])
 
         if self.type_scaling == 1:
             dnn_input = (dnn_input - self.mu[:self.num_inputs]) / self.sigma[:self.num_inputs]
-        else:
-            if self.type_scaling == 2:
-                dnn_input = 2 * (dnn_input - self.data_min[:self.num_inputs]) / \
-                            (self.data_max[:self.num_inputs] - self.data_min[:self.num_inputs]) - 1
+        elif self.type_scaling == 2:
+            dnn_input = 2 * (dnn_input - self.data_min[:self.num_inputs]) / \
+                        (self.data_max[:self.num_inputs] - self.data_min[:self.num_inputs]) - 1
 
         # Predict the commands
 
@@ -102,10 +99,9 @@ class DNN:
 
         if self.type_scaling == 1:
             command = command * self.sigma[self.num_inputs:] + self.mu[self.num_inputs:]
-        else:
-            if self.type_scaling == 2:
-                command = (command + 1) * (self.data_max[self.num_inputs:] - self.data_min[self.num_inputs:]) / 2 + \
-                          self.data_min[self.num_inputs:]
+        elif self.type_scaling == 2:
+            command = (command + 1) * (self.data_max[self.num_inputs:] - self.data_min[self.num_inputs:]) / 2 + \
+                      self.data_min[self.num_inputs:]
 
         return command
 

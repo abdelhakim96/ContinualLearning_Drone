@@ -12,13 +12,13 @@ from kinematics.dfnn_kinematics import DFNN
 from kinematics.inverse_kinematics import Inverse
 from kinematics.unicycle_kinematics import Unicycle
 from utils.save_data import save_data_kinematics
-from utils.show import show_plots_kinematics, show_animation
+from utils.show import show_plots_kinematics
+from utils.animate import AnimationUnicycle
 
 # Parameters
 
 collect_data = False  # True - collect data, False - test performance
-controller = 5  # 0 - random, 1 - PID, 2 - inverse, 3 - DFNN,
-# 4 - DNN0, 5 - DNN+ER, 6 - DNN+AGEM, 7 - DNN+EWC, 8 - DNN+LwF
+controller = 1  # 0 - random, 1 - PID, 2 - inverse, 3 - DFNN, 4 - DNN0, 5 - DNN+ER, 6 - DNN+AGEM, 7 - DNN+EWC, 8 - DNN+LwF
 trajectory = 2  # 0 - random points, 1 - circular, 2 - 8-shaped, 3 - set-point, 4 - square-wave
 uncertainty = 0  # internal uncertainty: 0 - no uncertainty, 1 - all parameters double, -1 - all parameters half;
 # default = -1
@@ -27,15 +27,15 @@ disturbance = 0  # external disturbance: 0 - no disturbance, >0 - positive distu
 noise = 0  # measurement noise standard deviation: 0 - no noise, >0 - white noise
 # default = 0.1
 
-animation = False  # True - enable online animation, False - disable online animation
+show_animation = True  # True - enable online animation, False - disable online animation
 
 dnnName = 'dnn_kinematics_32'
 dfnnName = 'dfnn_kinematics_32'
 
-k_end = int(np.pi * 10000)
+k_end = 4000
 dt = 0.001
 
-scale = 10
+scale = 1
 speed = 2
 
 if collect_data:
@@ -60,6 +60,7 @@ pose[1, :] = [x_init, y_init, yaw_init]
 pose_real = np.zeros((k_end + 1, 3))
 pose_real[0, :] = [x_init, y_init, yaw_init]
 pose_real[1, :] = [x_init, y_init, yaw_init]
+reference = np.zeros((k_end + 1, 3))
 command = np.zeros((k_end + 1, 2))
 command_random = np.zeros((k_end + 1, 2))
 command_pid = np.zeros((k_end + 1, 2))
@@ -72,18 +73,18 @@ t = np.linspace(0, dt * k_end, num=(k_end + 1))
 
 if trajectory == 0:  # random points (for collecting training data)
     reference = np.random.randn(k_end + 1, 3)
-if trajectory == 1:  # circular
+elif trajectory == 1:  # circular
     reference = np.column_stack([2 * np.cos(2 * t), -2 * np.sin(2 * t), np.zeros((k_end + 1, 1))])
-if trajectory == 2:  # 8-shaped
+elif trajectory == 2:  # 8-shaped
     # t -= np.pi/2
     reference = np.column_stack([
         4 * scale * np.cos(speed / scale * t) / (3 - np.cos(2 * speed / scale * t)),
         -2 * np.sqrt(2) * scale * np.sin(2 * speed / scale * t) / (3 - np.cos(2 * speed / scale * t)),
         np.zeros((k_end + 1, 1))])
     # t += np.pi / 2
-if trajectory == 3:  # set-point
+elif trajectory == 3:  # set-point
     reference = np.column_stack([2 * np.ones((k_end + 1, 1)), -2 * np.ones((k_end + 1, 1)), np.zeros((k_end + 1, 1))])
-if trajectory == 4:  # square-wave
+elif trajectory == 4:  # square-wave
     d = np.fix(t)
     d = d % 4
     b1 = np.fix(d / 2)
@@ -96,66 +97,41 @@ unicycle.max_w_y = 40
 pid = PID(dt)
 inverse = Inverse(unicycle)
 dfnn = DFNN(unicycle, dfnnName)
-if controller == 5:
+if controller == 4 or controller == 5:
     dnn = DNN_ER(dt, dnnName)
-else:
-    if controller == 6:
-        dnn = DNN_AGEM(dt, dnnName)
-    else:
-        if controller == 7:
-            dnn = DNN_EWC(dt, dnnName)
-        else:
-            dnn = DNN_LWF(dt, dnnName)
+elif controller == 6:
+    dnn = DNN_AGEM(dt, dnnName)
+elif controller == 7:
+    dnn = DNN_EWC(dt, dnnName)
+elif controller == 8:
+    dnn = DNN_LWF(dt, dnnName)
+
+animation = AnimationUnicycle(reference)
 
 # Main loop
 
-time_pid = 0
-time_inverse = 0
-time_dfnn = 0
-time_dnn0 = 0
-time_dnn = 0
+time_controller = 0
 for k in range(1, k_end):
 
     # Unicycle control
-    if collect_data:
-        command_random[k, 0] = np.random.uniform(-10, 20, 1)
-        command_random[k, 1] = np.random.uniform(-90, 90, 1)
-    else:
-        time_start = time.time()
-        command_pid[k, :] = pid.control(pose[k, :], reference[k, :])
-        time_pid += (time.time() - time_start)
 
-        time_start = time.time()
-        command_inverse[k, :] = inverse.control(pose[k, :], reference[k + 1, :])
-        time_inverse += (time.time() - time_start)
-
-        time_start = time.time()
-        command_dfnn[k, :] = dfnn.control(pose[k, :], reference[k + 1, :])
-        time_dfnn += (time.time() - time_start)
-
-        time_start = time.time()
-        command_dnn[k, :] = dnn.control(pose[k, :], reference[k + 1, :])
-        time_dnn0 += (time.time() - time_start)
-
-        if (controller == 5 or controller == 6 or controller == 7 or controller == 8) and k > 0:
-            time_start = time.time()
-            dnn.learn(pose[k, :], pose[k - 1, :], command[k - 1, :])
-            time_dnn += (time.time() - time_start)
+    time_start = time.time()
 
     if controller == 0:
-        command[k, :] = command_random[k, :]
-    else:
-        if controller == 1:
-            command[k, :] = command_pid[k, :]
-        else:
-            if controller == 2:
-                command[k, :] = command_inverse[k, :]
-            else:
-                if controller == 3:
-                    command[k, :] = command_dfnn[k, :]
-                else:
-                    if controller == 4 or controller == 5 or controller == 6 or controller == 7 or controller == 8:
-                        command[k, :] = command_dnn[k, :]
+        command_random[k, 0] = np.random.uniform(-10, 20, 1)
+        command_random[k, 1] = np.random.uniform(-90, 90, 1)
+    elif controller == 1:
+        command[k, :] = pid.control(pose[k, :], reference[k, :])
+    elif controller == 2:
+        command[k, :] = inverse.control(pose[k, :], reference[k + 1, :])
+    elif controller == 3:
+        command[k, :] = dfnn.control(pose[k, :], reference[k + 1, :])
+    elif controller == 4 or controller == 5 or controller == 6 or controller == 7 or controller == 8:
+        command[k, :] = dnn.control(pose[k, :], reference[k + 1, :])
+        if (controller == 5 or controller == 6 or controller == 7 or controller == 8) and k > 0:
+            dnn.learn(pose[k, :], pose[k - 1, :], command[k - 1, :])
+
+    time_controller += (time.time() - time_start)
 
     # Simulate unicycle
     if k < k_end * 1 / 7:
@@ -175,8 +151,15 @@ for k in range(1, k_end):
     # pose[k + 1, :], pose_real[k + 1, :] = unicycle.simulate(command[k, :], 0, 0, 0)
 
     # Animation
-    if animation:
-        show_animation(pose[:k + 1], reference[:k + 1])
+    if show_animation:
+        if True:#k % round(time_animation / dt) == 0:
+            command_animation = np.array([
+                100*np.clip(command[k, 0]/unicycle.max_w_y, -1, 1),
+                -100*np.clip(command[k, 1]/unicycle.max_w_z, -1, 1)])
+            animation.update(pose[:k + 1, :], reference[k, :], command_animation)
+        #time.sleep(0.1)
+
+    print('Progress: %.1f%%' % (k/(k_end - 1)*100))
 
 # Save online DNN
 
@@ -185,11 +168,7 @@ if controller == 5 or controller == 6 or controller == 7 or controller == 8:
 
 # Computational time
 
-print('PID time: %.3f ms' % (time_pid / k_end * 1000))
-print('Inverse time: %.3f ms' % (time_inverse / k_end * 1000))
-print('DFNN time: %.3f ms' % (time_dfnn / k_end * 1000))
-print('DNN0 time: %.3f ms' % (time_dnn0 / k_end * 1000))
-print('DNN time: %.3f ms' % ((time_dnn + time_dnn0) / k_end * 1000))
+print('Controller time: %.3f ms' % (time_controller / k_end * 1000))
 
 # Save results
 

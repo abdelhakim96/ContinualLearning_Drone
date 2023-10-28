@@ -24,7 +24,6 @@ class Inverse:
         r = self.unicycle.r
         i_y = self.unicycle.i_y
         i_z = self.unicycle.i_z
-        disturbance = self.unicycle.disturbance
 
         # Actual state
         pose -= self.unicycle.noise
@@ -39,11 +38,11 @@ class Inverse:
 
         # Compute pose errors
 
-        e_x = x_ref - x - disturbance[0] * self.dt - disturbance[0] * self.dt
-        e_y = y_ref - y - disturbance[1] * self.dt - disturbance[1] * self.dt
+        e_x = x_ref - x
+        e_y = y_ref - y
         yaw_ref = math.atan2(e_y, e_x)
         e_yaw = yaw_ref - yaw
-        e_yaw -= (abs(e_yaw) > math.pi) * 2 * math.pi * np.sign(e_yaw)
+        e_yaw -= (abs(e_yaw) > math.pi) * 2 * math.pi * np.sign(e_yaw)  # denormalize heading
         trajectory[2] = yaw_ref  # for debug
 
         # Pose controller
@@ -70,14 +69,18 @@ class Inverse:
 
         # Inverse law
 
-        tau_y = -(i_y * (
-                x * math.cos(yaw + w_z * self.dt) - x_ref * math.cos(yaw + w_z * self.dt) +
-                y * math.sin(yaw + w_z * self.dt) - y_ref * math.sin(yaw + w_z * self.dt) +
-                r * w_y * self.dt + r * w_y * self.dt * math.cos(w_z * self.dt))) / \
-                (r * (self.dt ** 2))
+        tau_y = i_y / (r * self.dt ** 2) * (
+                e_x * math.cos(yaw + w_z * self.dt) +
+                e_y * math.sin(yaw + w_z * self.dt) +
+                -r * w_y * self.dt * (1 + math.cos(w_z * self.dt)))
         tau_z = i_z * (e_yaw - 2 * w_z * self.dt) / (self.dt ** 2)
 
-        # damping to compensate for bounding commands
+        tau_y -= self.unicycle.disturbance[0]
+        tau_z -= self.unicycle.disturbance[1]
+
+        # Damp to compensate for saturated control inputs
+
+        d = np.sqrt(e_x**2 + e_y**2)
         tau_y -= 100000 * w_y
         tau_z -= 100000 * w_z
 
