@@ -4,13 +4,13 @@ This repository contains Continual Learning controllers for the kinematic and dy
 
 ## Overview
 
-This project implements several control strategies for a drone, including PID, inverse dynamics, and Deep Neural Network (DNN) based controllers. It also includes a ROS wrapper to control the drone in a simulated environment.
+This project implements several control strategies for a drone, including PID, inverse dynamics, and Deep Neural Network (DNN) based controllers. It also includes a ROS 2 wrapper to control the drone in a simulated environment.
 
 **Author:** Andriy Sarabakha<br />
 **Affiliation:** [Nanyang Technological University (NTU)](https://www.ntu.edu.sg), Singapore<br />
 **Maintainer:** Andriy Sarabakha, andriy.sarabakha@ntu.edu.sg
 
-**Keywords:** continual learning, deep learning, drone, ros
+**Keywords:** continual learning, deep learning, drone, ros2
 
 This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
 
@@ -56,18 +56,18 @@ Run `main_kinematics.py`:
 
     python python/main_kinematics.py
 
-### ROS Node
+### ROS 2 Node
 
-To run the ROS node, first build your catkin workspace:
+To run the ROS 2 node, first build your colcon workspace:
 
-    catkin_make
+    colcon build
 
 Then source the workspace:
 
-    source devel/setup.bash
+    source install/setup.bash
 
 Finally, run the node:
 
-    rosrun unicycle_control unicycle_node.py
+    ros2 run unicycle_control unicycle_node
 
 You can send velocity commands to the `/cmd_vel` topic and monitor the drone's odometry on the `/odom` topic.
