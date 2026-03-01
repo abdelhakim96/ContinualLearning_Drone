@@ -1,0 +1,17 @@
+\begin{table}[htbp]
+\centering
+\caption{Overall performance metrics for all controllers on the BlueROV2 lemniscate trajectory tracking benchmark.}
+\label{tab:overall_results}
+\begin{tabular}{lcccc}
+\toprule
+Controller & Pos.\ RMSE (m) $\downarrow$ & Head.\ RMSE (rad) $\downarrow$ & Effort (N) $\downarrow$ & Time (ms) $\downarrow$ \\
+\midrule
+PID & 2.700 & 0.880 & 35.44 & 0.058 \\
+Inverse & 2.634 & 0.147 & 31.01 & 0.036 \\
+DNN & 2.640 & 0.146 & 31.24 & 0.176 \\
+LoRA-ER & 0.132 & 0.063 & 28.38 & 0.197 \\
+LoRA-EWC & 0.161 & 0.071 & 28.23 & 0.217 \\
+LoRA-AGEM & 0.192 & 0.079 & 28.41 & 0.207 \\
+\bottomrule
+\end{tabular}
+\end{table}
