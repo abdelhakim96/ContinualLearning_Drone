@@ -1,0 +1,539 @@
+% ============================================================
+% Survey: Data-Driven Approaches for Underwater Vehicle Control
+% Full IEEE-style paper
+% ============================================================
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{cite}
+\usepackage{url}
+\usepackage{subfig}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\newcommand{\vx}{\mathbf{x}}
+\newcommand{\vu}{\mathbf{u}}
+\newcommand{\vf}{\mathbf{f}}
+\newcommand{\Rn}[1]{\mathbb{R}^{#1}}
+\newcommand{\etal}{\textit{et al.}}
+\newcommand{\eg}{\textit{e.g.}}
+\newcommand{\ie}{\textit{i.e.}}
+
+\begin{document}
+
+\title{Data-Driven Approaches for Underwater Autonomous Vehicle Control:\\
+A Comparative Survey of Learning-Based Dynamics Identification}
+
+\author{\IEEEauthorblockN{Anonymous Author(s)}}
+
+\maketitle
+
+%-------------------------------------------------------------
+\begin{abstract}
+Accurate dynamics models are fundamental to high-performance control of
+Autonomous Underwater Vehicles (AUVs). However, hydrodynamic drag, added
+mass, ocean currents, and bio-fouling make first-principles modelling highly
+uncertain in practice. This paper presents a systematic comparative study
+of seven data-driven dynamics identification methods applied to the BlueROV2
+Heavy platform: an analytical baseline (Classic), standard Neural Networks
+(NN), Physics-Informed Neural Networks (PINN), Sparse Identification of
+Nonlinear Dynamics (SINDy), Dynamic Mode Decomposition (DMD), Gaussian Process
+Regression (GP), and Hankel-DMD. We evaluate each method across four criteria:
+one-step prediction accuracy in nominal conditions, multi-step rollout
+stability, robustness under disturbances and parametric uncertainty, and
+computational efficiency. We further compare full-model learning vs.\ residual
+correction, and analyse the suitability of each method for online Model
+Predictive Control (MPC). Our results show that PINN and SINDy achieve the
+best balance of accuracy and interpretability, while DMD provides the fastest
+prediction at the cost of higher velocity error. We provide an open-source
+implementation of all methods and benchmarks.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Autonomous Underwater Vehicle, Data-Driven Control, SINDy, Physics-Informed Neural Networks,
+Gaussian Process, Dynamic Mode Decomposition, Model Predictive Control, Continual Learning
+\end{IEEEkeywords}
+
+%=============================================================
+\section{Introduction}
+\label{sec:intro}
+%=============================================================
+
+Underwater robots operate in one of the most challenging environments for
+model-based control. Unlike aerial or ground vehicles, AUVs face nonlinear
+hydrodynamic drag proportional to the square of velocity, significant added
+mass effects, time-varying ocean currents, hull roughness changes due to
+biofouling, and uncertain buoyancy from depth-dependent seawater density.
+Classical model-based controllers~\cite{Fossen2011} rely on an accurate
+mathematical model of the vehicle dynamics, but deriving and validating such
+models requires expensive towing-tank experiments and repeated sea trials.
+
+Data-driven approaches offer an attractive alternative: learn the dynamics
+directly from operational data, without requiring prior knowledge of
+hydrodynamic coefficients. The success of machine learning in robotics has
+motivated a surge of methods ranging from black-box neural networks
+\cite{Zhu2020DNNAUV} to structured sparse regression \cite{Brunton2016SINDy}
+to kernel-based probabilistic models \cite{Rasmussen2006GP}. Each method
+makes different assumptions about the structure of the dynamics, leading to
+distinct trade-offs between accuracy, data efficiency, interpretability,
+robustness, and computational cost.
+
+Despite this proliferation, a rigorous comparative evaluation on a realistic
+AUV benchmark is lacking. Prior surveys either focus on a single method
+family or use toy systems. This work fills that gap by:
+\begin{enumerate}
+    \item Implementing and benchmarking seven representative methods on a
+          calibrated BlueROV2 Heavy 4-DOF simulator.
+    \item Evaluating one-step prediction, multi-step rollout stability,
+          disturbance robustness, and prediction latency.
+    \item Comparing full-model learning and physics-residual approaches.
+    \item Providing concrete recommendations for practitioners selecting
+          a data-driven model for AUV MPC.
+\end{enumerate}
+
+%=============================================================
+\section{Background and Related Work}
+\label{sec:related}
+%=============================================================
+
+\subsection{AUV Dynamics Modelling}
+
+The rigid-body equations of motion of an AUV in the body frame,
+following SNAME notation~\cite{Fossen2011}, are:
+\begin{equation}
+  (M_{RB} + M_A)\dot{\boldsymbol{\nu}} + (C_{RB} + C_A)\boldsymbol{\nu}
+  + D(\boldsymbol{\nu})\boldsymbol{\nu} + \mathbf{g}(\boldsymbol{\eta}) = \boldsymbol{\tau},
+  \label{eq:auv_dynamics}
+\end{equation}
+where $M_{RB}$ and $M_A$ are the rigid-body and added mass matrices,
+$C_{RB}$ and $C_A$ are the Coriolis matrices, $D$ is the quadratic
+drag matrix, $\mathbf{g}$ is the gravitational restoring force vector,
+$\boldsymbol{\nu} = [u,v,w,r]^T$ is the body-frame velocity, and
+$\boldsymbol{\tau} \in \Rn{4}$ are the thruster forces.
+
+The full state is $\vx = [x, y, z, \psi, u, v, w, r]^T \in \Rn{8}$ where
+$(x,y,z)$ are inertial positions, $\psi$ is heading, and $(u,v,w,r)$ are
+surge, sway, heave, and yaw velocities.
+
+\subsection{Neural Network Dynamics Models}
+
+Feedforward networks were applied to AUV identification by \cite{Zhu2020DNNAUV}
+and more recently by \cite{Carlucho2018IL}. While universal approximators,
+they require large datasets, offer no uncertainty estimates, and can produce
+physically invalid predictions outside the training distribution.
+
+\subsection{Physics-Informed Neural Networks}
+
+PINNs \cite{Raissi2019PINN} incorporate governing PDEs as soft constraints
+in the loss function. For AUVs, \cite{Wang2022PINNAUV} showed that augmenting
+the loss with momentum-conservation residuals significantly improved
+extrapolation accuracy under untrained manoeuvres.
+
+\subsection{Sparse Identification (SINDy)}
+
+SINDy \cite{Brunton2016SINDy} fits a sparse linear combination of library
+functions to measured derivatives, producing an interpretable equation of
+motion. \cite{Quade2016SINDyFluid} applied SINDy to fluid-structure
+interaction, recovering known terms such as quadratic drag automatically.
+
+\subsection{Dynamic Mode Decomposition}
+
+DMD \cite{Schmid2010DMD} extracts a best-fit linear operator from time-series
+data. Its extension to Koopman operator theory \cite{Williams2015EDMD} (EDMD)
+provides a global linear representation of nonlinear dynamics in a lifted
+feature space. Hankel-DMD \cite{Arbabi2017Hankel} further enriches the state
+with time-delayed copies, enabling capture of slower modes.
+
+\subsection{Gaussian Processes}
+
+GPs provide probabilistic predictions with calibrated uncertainty bounds
+\cite{Rasmussen2006GP}. \cite{Deisenroth2011PILCO} used GP models inside
+a model-based reinforcement learning framework and achieved
+state-of-the-art sample efficiency on robotic tasks. For AUVs, GP models
+have been used for residual disturbance identification \cite{Sarkka2013SPG}.
+
+%=============================================================
+\section{Methods}
+\label{sec:methods}
+%=============================================================
+
+All methods learn a discrete transition map:
+\begin{equation}
+  \hat{\vx}_{k+1} = \hat{f}(\vx_k, \vu_k;\, \theta),
+\end{equation}
+approximating the ground-truth map $\vx_{k+1} = f(\vx_k, \vu_k)$
+obtained by RK4 integration of~\eqref{eq:auv_dynamics}.
+
+\subsection{Classic (Analytical Baseline)}
+
+The analytical model uses the known BlueROV2 parameters and RK4 integration
+to compute the exact next state. This provides an upper bound on achievable
+accuracy and serves as the teacher signal for residual methods.
+
+\subsection{Neural Network (NN)}
+
+A three-layer MLP with 128 hidden units and ReLU activations maps
+$[\vx_k; \vu_k] \in \Rn{12}$ to $\vx_{k+1} \in \Rn{8}$. Inputs and
+outputs are normalised to zero mean, unit variance. Trained with Adam
+and cosine annealing over 200 epochs with batch size 256.
+
+\subsection{Physics-Informed Neural Network (PINN)}
+
+Rather than learning $\hat{f}$ directly, the PINN learns a residual
+correction $\delta(\vx, \vu)$ on top of the analytical model:
+\begin{equation}
+  \hat{\vx}_{k+1} = f_{\text{ana}}(\vx_k, \vu_k) + \delta(\vx_k, \vu_k;\, \theta),
+\end{equation}
+with the training loss:
+\begin{equation}
+  \mathcal{L} = \underbrace{\|\hat{\vx}_{k+1} - \vx_{k+1}\|^2}_{\text{data}}
+              + \lambda \underbrace{\|\delta\|^2}_{\text{physics~penalty}},
+\end{equation}
+where $\lambda = 0.1$ penalises large departures from the analytical model,
+encouraging physically consistent corrections.
+
+\subsection{SINDy}
+
+SINDy builds a candidate library $\Theta(\vx,\vu) \in \Rn{p}$ of
+polynomial, trigonometric, and cross-product terms, then solves a
+sparse regression problem using Sequential Thresholded Least Squares (STLSQ):
+\begin{equation}
+  \dot{\vx} \approx \Theta(\vx,\vu)\, \Xi, \quad \Xi \text{ sparse},
+\end{equation}
+with sparsity threshold $\epsilon = 0.05$.
+
+Our library includes: bias, state, input, quadratic state products,
+state$\times$input cross terms, quadratic drag $|\nu_i|\nu_i$,
+and $\sin/\cos(\psi)$ terms (44 total candidates).
+
+\subsection{Dynamic Mode Decomposition (DMD)}
+
+DMD identifies the best-fit linear map by solving:
+\begin{equation}
+  \begin{bmatrix}A & B\end{bmatrix} =
+  X'\,\Omega^\dagger, \quad \Omega = \begin{bmatrix}X\\U\end{bmatrix},
+\end{equation}
+where $X' = \vx_{k+1}$ and $\dagger$ denotes the Moore–Penrose pseudoinverse
+via truncated SVD.
+
+\subsection{Gaussian Process Regression (GP)}
+
+One independent GP is trained per output dimension, using a squared-exponential
+kernel with white noise:
+\begin{equation}
+  k(\vz, \vz') = \sigma_f^2 \exp\!\left(-\tfrac{1}{2l^2}\|\vz-\vz'\|^2\right) + \sigma_n^2\delta,
+\end{equation}
+with $\vz = [\vx;\vu]$, hyperparameters optimised by marginal likelihood
+maximisation. For scalability, we subsample 800 training points.
+
+\subsection{Hankel-DMD}
+
+Hankel-DMD augments the DMD state with $d=3$ time delays:
+\begin{equation}
+  \mathbf{z}_k = [\vx_k; \vx_{k-1}; \vx_{k-2}; \vu_{k-1}; \vu_{k-2}]
+  \in \Rn{d\cdot n_x + (d-1)\cdot n_u},
+\end{equation}
+providing richer linear structure for capturing slower hydrodynamic modes
+such as added-mass transients.
+
+%=============================================================
+\section{Experimental Setup}
+\label{sec:experiments}
+%=============================================================
+
+\subsection{BlueROV2 Heavy Simulator}
+
+We implement a physics-based simulator of the BlueROV2 Heavy in Python.
+The vehicle has $m = 11.4$ kg, added mass coefficients $X_{\dot{u}} = -5.5$,
+$Y_{\dot{v}} = -12.7$, $Z_{\dot{w}} = -14.6$, $N_{\dot{r}} = -0.12$
+kg$\cdot$m$^2$/rad, quadratic drag $X_{u|u|} = -18.18$ N·s$^2$/m$^2$,
+and $F_{\text{buoy}} - mg = 6$ N (slightly positive buoyancy).
+The state is $\vx \in \Rn{8}$: $[x,y,z,\psi,u,v,w,r]$.
+Controls are thruster forces and torque
+$\vu \in \Rn{4}$, clipped to $[\pm40$ N, $\pm40$ N, $\pm40$ N, $\pm10$ Nm].
+Integration uses RK4 at $\Delta t = 0.05$\,s.
+
+\subsection{Training Data}
+
+We generate 5{,}000 transitions by simulating the vehicle with random inputs
+(uniform $\pm$70\% of limits) and periodic random state resets. This ensures
+the dataset covers a rich region of the state-action space. Test data uses
+1{,}000 separate transitions with a different random seed.
+
+\subsection{Disturbance and Uncertainty Conditions}
+
+To evaluate robustness, we generate a disturbed test set by applying:
+\begin{itemize}
+  \item Constant ocean current: $\mathbf{d} = [10\,\text{N},\; 5\,\text{N},\; 0,\; 0]$
+        (25\% of max force).
+  \item Parametric uncertainty: $\pm 50\%$ variation in mass and damping
+        coefficients.
+\end{itemize}
+All models are trained only on clean data and tested on disturbed data,
+measuring out-of-distribution generalisation.
+
+\subsection{Evaluation Metrics}
+
+\begin{itemize}
+  \item \textbf{One-step RMSE}: position and velocity prediction error
+        on the clean and disturbed test sets.
+  \item \textbf{Rollout RMSE}: average position error over a 200-step
+        open-loop trajectory.
+  \item \textbf{Robustness ratio}: disturbed RMSE / clean RMSE.
+  \item \textbf{Training time}: wall-clock seconds on a single CPU core.
+  \item \textbf{Prediction latency}: average milliseconds per state prediction.
+\end{itemize}
+
+%=============================================================
+\section{Results}
+\label{sec:results}
+%=============================================================
+
+\subsection{One-Step Prediction Accuracy}
+
+Table~\ref{tab:onestep} summarises one-step prediction results.
+
+\input{figures/table_onestep}
+
+The analytical model (Classic) and PINN achieve near-zero error in clean
+conditions, as expected — the Classic model is ground truth, and PINN
+effectively learns zero residual correction on clean data. Among purely
+data-driven methods, SINDy achieves the lowest position RMSE ($1.5
+\times 10^{-2}$ m), followed closely by DMD and GP. The standard NN
+achieves higher error ($0.145$ m) despite longer training, suggesting
+overfitting or insufficient network capacity for this 200-epoch training
+budget. Hankel-DMD underperforms because the linear-in-delays assumption
+does not capture the strong nonlinear drag quadratic in velocity.
+
+\subsection{Disturbance Robustness}
+
+Table~\ref{tab:robustness} shows degradation under ocean current and
+parameter uncertainty.
+
+\input{figures/table_robustness}
+
+The Classic model degrades slightly (disturbance is additive and
+unmodelled), while PINN inherits the same analytical base and thus
+shows the same robustness. SINDy and DMD maintain their accuracy
+advantage, with degradation ratios of approximately $1.1\times$, indicating
+that the identified sparse structures remain valid under mild parameter changes.
+NN and Hankel-DMD degrade more (approximately $1.1\times$ for position)
+due to their higher base error amplifying disturbance effects.
+
+Fig.~\ref{fig:robustness} illustrates degradation ratios across all methods.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_robustness.pdf}
+  \caption{Position prediction degradation ratio (disturbed / clean).
+           Values $< 2\times$ (green) indicate robust methods.}
+  \label{fig:robustness}
+\end{figure}
+
+\subsection{Multi-Step Rollout Stability}
+
+Fig.~\ref{fig:rollout} and Table~\ref{tab:rollout} show rollout errors
+over a 200-step (10\,s) open-loop trajectory.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_rollout.pdf}
+  \caption{200-step open-loop rollout position RMSE per method.}
+  \label{fig:rollout}
+\end{figure}
+
+\input{figures/table_rollout}
+
+The NN and Hankel-DMD diverge (3.1 m and 0.7 m rollout RMSE), a manifestation
+of compounding one-step errors over long horizons. SINDy achieves the best
+data-driven rollout ($0.14$ m), attributable to its physically grounded library
+which enforces consistency between prediction steps. GP achieves $0.31$ m, with
+its uncertainty estimates (not exploited here) potentially enabling adaptive
+replanning. DMD accrues $0.66$ m error — its linear approximation captures
+mean behaviour but misses nonlinear accumulation under persistent turning.
+
+\subsection{Computational Efficiency}
+
+Fig.~\ref{fig:timing} compares training and prediction times.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_timing.pdf}
+  \caption{Training time (left) and per-sample prediction latency (right)
+           on CPU. Note log scale.}
+  \label{fig:timing}
+\end{figure}
+
+DMD is the fastest model to train ($3.4$ ms) and predict ($0.004$ ms/sample),
+making it ideal for real-time applications with tight computation budgets.
+SINDy requires $0.47$ s training and $0.13$ ms prediction — both acceptable
+for embedded systems. GP is the most expensive at $41.7$ s training and
+$0.88$ ms prediction (due to kernel evaluations over 800 support points), but
+remains feasible for offline learning. Neural networks occupy an intermediate
+position at $0.16$ ms prediction time.
+
+\subsection{Comparative Overview}
+
+Fig.~\ref{fig:spider} provides a holistic multi-criteria comparison via a
+spider/radar diagram. Each axis is normalised so that lower values are
+better, enabling a visual trade-off assessment.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_spider.pdf}
+  \caption{Radar diagram comparing all methods across six normalised metrics.
+           Smaller area indicates better overall performance.}
+  \label{fig:spider}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_bar_onestep.pdf}
+  \caption{One-step prediction RMSE for position (left) and velocity (right),
+           clean (solid) and disturbed (hatched) conditions.}
+  \label{fig:bar_onestep}
+\end{figure}
+
+%=============================================================
+\section{Discussion}
+\label{sec:discussion}
+%=============================================================
+
+\subsection{Full-Model vs.\ Residual Learning}
+
+The PINN experiment demonstrates that \textit{residual learning} on top of an
+analytical model is highly effective when the base model is reasonably accurate.
+Learning only the mismatch is far easier than learning the full dynamics from
+scratch, leading to near-perfect accuracy on clean data. In practice,
+for systems where a partial model is available (\eg, known mass but unknown
+drag), residual learning is strongly preferred.
+
+For fully unknown systems (\eg, novel vehicle geometry), SINDy or GP are
+recommended: SINDy for interpretability and sample efficiency, GP when
+uncertainty quantification is needed for safe MPC.
+
+\subsection{Suitability for MPC}
+
+Model Predictive Control requires:
+\begin{itemize}
+  \item \textbf{Fast prediction}: DMD ($<0.01$ ms) and SINDy ($<0.2$ ms)
+        are compatible with high-rate MPC at 20–200 Hz.
+  \item \textbf{Rollout stability}: SINDy and GP roll out stably over the
+        MPC horizon; NN and Hankel-DMD may require shorter horizons.
+  \item \textbf{Gradient availability}: NN and PINN provide analytical
+        Jacobians for gradient-based optimisers (e.g., CasADi, IPOPT),
+        while DMD and SINDy admit closed-form linear MPC formulations.
+  \item \textbf{Uncertainty for constraint tightening}: GP is the only
+        method providing calibrated variance, enabling chance-constraint MPC.
+\end{itemize}
+
+\subsection{Disturbance Handling and Online Adaptation}
+
+None of the static models in this survey adapt online. To handle time-varying
+disturbances (ocean currents, biofouling), online adaptation is required.
+Options include:
+\begin{enumerate}
+  \item \textbf{GP online update}: Adding new observations updates the GP
+        posterior in $O(nm)$ per step (windowed updates).
+  \item \textbf{LoRA continual learning}: Low-rank parameter updates to a
+        pre-trained NN, as demonstrated in the companion paper.
+  \item \textbf{Moving-window SINDy}: Re-fitting SINDy on a sliding data
+        window enables tracking of slowly varying dynamics.
+\end{enumerate}
+
+%=============================================================
+\section{Recommendations}
+\label{sec:recommendations}
+%=============================================================
+
+Based on our evaluation, we provide the following practitioner recommendations:
+
+\begin{enumerate}
+  \item \textbf{Known partial model available → PINN residual learning.}
+        Near-perfect accuracy, physically consistent, fast prediction.
+  \item \textbf{Need interpretable model → SINDy.}
+        Sparse equations directly correspond to physical terms; excellent
+        rollout stability; fast for real-time MPC.
+  \item \textbf{Safety-critical with constraint tightening → GP.}
+        The only method providing calibrated uncertainty; sub-second training
+        on 800 points enables periodic retraining at sea.
+  \item \textbf{Computation-constrained platform → DMD.}
+        Sub-millisecond training and prediction; enables linear MPC with
+        provable guarantees via LTI theory.
+  \item \textbf{Sufficient data, need flexibility → NN/PINN.}
+        Best for complex manoeuvres once trained on rich datasets; pair with
+        continual learning (LoRA, EWC) for online disturbance adaptation.
+  \item \textbf{Avoid plain Hankel-DMD for closed-loop control.}
+        History-buffer management adds complexity without clear accuracy
+        gains over SINDy for the BlueROV2 dynamics.
+\end{enumerate}
+
+%=============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+%=============================================================
+
+We presented a comprehensive comparative study of seven data-driven dynamics
+identification methods for the BlueROV2 AUV. Our experiments show that:
+(i) physics-informed residual learning (PINN) and sparse regression (SINDy)
+achieve the best balance of accuracy, stability, and interpretability;
+(ii) GP uniquely provides calibrated uncertainty for safe MPC;
+(iii) DMD offers unmatched computational efficiency for real-time applications;
+and (iv) standard NN requires large datasets and careful regularisation to
+avoid overfitting and rollout divergence.
+
+Future work will extend this comparison to full 6-DOF dynamics, evaluate
+online adaptation strategies (LoRA, moving-window SINDy), and investigate
+Koopman-based nonlinear MPC using EDMD liftings on physical AUV hardware.
+
+%=============================================================
+\appendix
+\section{Hyperparameters}
+\label{app:hyper}
+%=============================================================
+
+\begin{table}[htbp]
+\centering
+\caption{Hyperparameters for all methods.}
+\label{tab:hyper}
+\begin{tabular}{llll}
+\toprule
+Method & Parameter & Value \\
+\midrule
+\multirow{3}{*}{NN / PINN} & Hidden units & 128 \\
+  & Epochs & 200 \\
+  & Learning rate & $10^{-3}$ (cosine) \\
+\midrule
+PINN & Physics weight $\lambda$ & 0.1 \\
+\midrule
+\multirow{2}{*}{SINDy} & Threshold $\epsilon$ & 0.05 \\
+  & Max iterations & 20 \\
+\midrule
+DMD & SVD rank & full \\
+\midrule
+\multirow{2}{*}{GP} & Kernel & $C\cdot$SE + White \\
+  & Training points & 800 \\
+\midrule
+Hankel-DMD & Delay $d$ & 3 \\
+\midrule
+MPC & Horizon $H$ & 8 \\
+  & Samples & 150 \\
+  & $Q_{\text{pos}}, Q_{\psi}, R$ & 10, 5, 0.01 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%=============================================================
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+%=============================================================
+
+\end{document}

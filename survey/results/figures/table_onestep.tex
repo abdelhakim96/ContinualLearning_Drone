@@ -1,0 +1,18 @@
+\begin{table}[htbp]
+\centering
+\caption{One-step prediction accuracy (clean conditions).}
+\label{tab:onestep}
+\begin{tabular}{lcccc}
+\toprule
+Method & $Pos.\ RMSE$ $\downarrow$ & $Vel.\ RMSE$ $\downarrow$ & $Total RMSE$ $\downarrow$ & $Time (ms)$ $\downarrow$ \\
+\midrule
+Classic & 0.00000 & 0.00000 & 0.00000 & 0.028 \\
+NN & 0.14466 & 0.03576 & 0.26433 & 0.156 \\
+PINN & 0.00000 & 0.00000 & 0.00000 & 0.215 \\
+SINDy & 0.01527 & 0.03710 & 0.25232 & 0.134 \\
+DMD & 0.01602 & 0.12949 & 0.20335 & 0.004 \\
+GP & 0.01634 & 0.02034 & 0.25976 & 0.884 \\
+Hankel & 0.14483 & 0.16934 & 0.27021 & 0.008 \\
+\bottomrule
+\end{tabular}
+\end{table}

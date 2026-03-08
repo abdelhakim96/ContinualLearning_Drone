@@ -1,0 +1,18 @@
+\begin{table}[htbp]
+\centering
+\caption{Multi-step rollout prediction accuracy.}
+\label{tab:rollout}
+\begin{tabular}{lcc}
+\toprule
+Method & Rollout RMSE (m) $\downarrow$ & Final Error (m) $\downarrow$ \\
+\midrule
+Classic & 0.0000 & 0.0000 \\
+NN & 3.1153 & 6.1573 \\
+PINN & 0.0000 & 0.0000 \\
+SINDy & 0.1421 & 0.5062 \\
+DMD & 0.6627 & 2.0738 \\
+GP & 0.3092 & 1.0368 \\
+Hankel & 0.7016 & 2.2361 \\
+\bottomrule
+\end{tabular}
+\end{table}

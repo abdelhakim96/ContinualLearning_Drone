@@ -1,0 +1,18 @@
+\begin{table}[htbp]
+\centering
+\caption{Prediction accuracy under disturbance and model uncertainty.}
+\label{tab:robustness}
+\begin{tabular}{lcccc}
+\toprule
+Method & Pos.\ RMSE (clean) & Pos.\ RMSE (dist.) & Degradation $\uparrow$ & Vel.\ RMSE (dist.) \\
+\midrule
+Classic & 0.00000 & 0.00128 & 12755830.6$\times$ & 0.06809 \\
+NN & 0.14466 & 0.16186 & 1.1$\times$ & 0.07264 \\
+PINN & 0.00000 & 0.00128 & 12037387.8$\times$ & 0.06809 \\
+SINDy & 0.01527 & 0.01696 & 1.1$\times$ & 0.07320 \\
+DMD & 0.01602 & 0.01766 & 1.1$\times$ & 0.13194 \\
+GP & 0.01634 & 0.01908 & 1.2$\times$ & 0.06944 \\
+Hankel & 0.14483 & 0.15890 & 1.1$\times$ & 0.16060 \\
+\bottomrule
+\end{tabular}
+\end{table}
