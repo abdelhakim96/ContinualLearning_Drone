@@ -1,0 +1,75 @@
+
+=============================================================================
+  BENCHMARK RECOMMENDATIONS
+  BlueROV2 Data-Driven Dynamics Survey
+=============================================================================
+
+1. FULL-MODEL vs RESIDUAL LEARNING
+───────────────────────────────────
+  • Best full-model method (nominal):    SINDy
+  • Best full-model method (disturbed):  SINDy
+  • Best residual method (PINN):         near-zero error on clean data
+  • Online adaptation gap:               0.00036 m
+    → Under disturbances, even the best residual model degrades by 0.00036 m.
+      This gap CANNOT be closed by better offline training alone — it requires
+      online adaptation (e.g. LoRA continual learning, moving-window SINDy,
+      or GP posterior update).
+
+2. WHEN TO USE FULL-MODEL LEARNING
+────────────────────────────────────
+  Use full-model learning when:
+  ✓ No analytical model is available (novel hull geometry)
+  ✓ Fast training matters (SINDy: <0.5s, DMD: <5ms)
+  ✓ Linear MPC is preferred (DMD, SINDy → closed-form QP)
+  ✓ Interpretability required (SINDy recovers physical drag terms)
+  ✓ Uncertainty estimates needed (GP → calibrated variance for safe MPC)
+
+3. WHEN TO USE RESIDUAL LEARNING
+──────────────────────────────────
+  Use residual learning when:
+  ✓ A partial analytical model is available (known mass, unknown drag)
+  ✓ Data efficiency matters (PINN needs far fewer samples)
+  ✓ Physical consistency on clean data is paramount
+  ✓ The residual is expected to be small (mild unmodelled effects)
+
+4. WHEN TO USE BOTH
+─────────────────────
+  Use residual learning AS THE BASE + online adaptation when:
+  ✓ Disturbances are time-varying or previously unseen (ocean currents,
+    biofouling, thruster wear)
+  ✓ The online adaptation gap (0.0004 m) exceeds tracking tolerance
+  ✓ Recommended pipeline:
+      PINN (offline, residual base)
+        └→ LoRA-ER / EWC (online low-rank adaptation of PINN residual)
+  ✓ This combination achieves: (a) best nominal accuracy from PINN,
+    (b) rapid disturbance rejection from LoRA,
+    (c) no catastrophic forgetting via experience replay.
+
+5. SCENARIO-SPECIFIC RECOMMENDATIONS
+──────────────────────────────────────
+  S1 Nominal:          Any method works. PINN / SINDy most accurate.
+  S2 Ocean current:    SINDy degrades least. GP provides uncertainty.
+                       Full-model wins here; residual needs online update.
+  S3 Buoyancy shift:   Constant offset → SINDy or DMD identify quickly.
+  S4 Thruster deg.:    GP uncertainty bounds flag sensor anomalies.
+                       Online adaptation critical (time-varying keff).
+  S5 Control latency:  All models degrade equally (latency is GT, not model).
+                       Delay margin: 0.40s before 80% success threshold.
+  S6 Parametric unc.:  Residual (PINN) retains analytical structure; best.
+                       Full-models degrade ~linearly with unc. magnitude.
+  S7 Combined:         No single offline method dominates.
+                       → USE BOTH: PINN + online LoRA is recommended.
+
+6. SUMMARY TABLE
+─────────────────
+  Criterion             Winner          Second
+  ─────────────────────────────────────────────
+  Nominal accuracy      PINN            SINDy
+  Disturbed accuracy    SINDy           GP
+  Robustness ratio      SINDy / DMD     GP
+  Training speed        DMD (<5ms)      SINDy (<0.5s)
+  Prediction speed      DMD             Hankel
+  Uncertainty bounds    GP              —
+  Interpretability      SINDy           Classic
+  Online adaptability   PINN+LoRA       GP online
+=============================================================================

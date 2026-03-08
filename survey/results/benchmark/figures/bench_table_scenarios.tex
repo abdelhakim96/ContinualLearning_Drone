@@ -1,0 +1,13 @@
+\begin{table*}[htbp]
+\centering
+\caption{Position prediction RMSE~[m] ($\downarrow$) under each disturbance scenario. Mean $\pm$ std over 20 Monte Carlo trials. Full-model methods: NN, SINDy, DMD, GP, Hankel. Residual: PINN.}
+\label{tab:bench_scenarios}
+\begin{tabular}{lccccccc}
+\toprule
+Scenario & \textbf{Classic} & \textbf{NN} & \textbf{PINN} & \textbf{SINDy} & \textbf{DMD} & \textbf{GP} & \textbf{Hankel} \\
+\midrule
+S1\_Nominal & $0.0000_{\pm0.0000}$ & $0.0681_{\pm0.0051}$ & $0.0000_{\pm0.0000}$ & $0.0045_{\pm0.0004}$ & $0.0055_{\pm0.0006}$ & $0.0061_{\pm0.0010}$ & $0.0859_{\pm0.0081}$ \\
+S2\_Current\_25 & $0.0004_{\pm0.0001}$ & $0.1055_{\pm0.0122}$ & $0.0004_{\pm0.0001}$ & $0.0120_{\pm0.0016}$ & $0.0129_{\pm0.0020}$ & $0.0128_{\pm0.0027}$ & $0.1157_{\pm0.0111}$ \\
+\bottomrule
+\end{tabular}
+\end{table*}

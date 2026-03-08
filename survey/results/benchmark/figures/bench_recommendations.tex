@@ -1,0 +1,32 @@
+
+\section{Recommendations}
+\label{sec:recommendations_bench}
+
+Based on the benchmark evaluation, we provide the following guidelines:
+
+\subsection{Full-Model vs.\ Residual Learning}
+
+\textbf{Full-model learning} (NN, SINDy, DMD, GP, Hankel) should be used when
+no analytical model is available, or when interpretability, linear MPC
+compatibility, or uncertainty quantification are required. Among these, SINDy
+provides the best disturbed-condition accuracy while remaining physically
+interpretable and fast enough for real-time MPC.
+
+\textbf{Residual learning} (PINN) is preferred when a partial analytical model
+exists and the expected residual is small. It achieves near-zero prediction
+error on clean data by design, and requires fewer samples.
+
+\subsection{When to Use Both}
+
+The \textit{online adaptation gap} of \textbf{0.0004~m}
+quantifies the degradation of the best residual model under disturbances.
+This gap cannot be closed by better offline training; it demands \textit{online
+adaptation}. We recommend the following pipeline:
+\begin{enumerate}
+  \item Train a PINN residual model offline on clean data.
+  \item Deploy with a LoRA adapter initialised at zero (no residual correction).
+  \item Update the LoRA adapter online using Experience Replay or EWC to
+        compensate for observed disturbances without forgetting clean-water behaviour.
+\end{enumerate}
+This combination achieves the nominal accuracy of PINN and the disturbance
+rejection of LoRA continual learning, as demonstrated in the companion paper.
