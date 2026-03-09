@@ -1,0 +1,23 @@
+\begin{table*}[htbp]
+\centering
+\caption{BlueROV2 NMPC lemniscate tracking performance.}
+\label{tab:nmpc_summary}
+\begin{tabular}{llccccc}
+\toprule
+Scenario & Controller & Pos.\ RMSE [m] $\downarrow$ & Head.\ RMSE [rad] $\downarrow$ & Max Err [m] $\downarrow$ & Effort & Time [ms] \\
+\midrule
+nominal & Analytical-NMPC & 0.1332 & 0.8016 & 0.5108 & 20.09 & 0.79 \\
+ & NMPC+PINN & 0.1332 & 0.8016 & 0.5108 & 20.09 & 1.37 \\
+ & NMPC+SINDy & 1.9070 & 1.4479 & 3.8110 & 64.60 & 1.82 \\
+ & NMPC+GP & 2.1746 & 1.6740 & 3.8157 & 55.16 & 3.20 \\
+current\_25pct & Analytical-NMPC & 0.2289 & 0.7932 & 0.7391 & 18.28 & 0.87 \\
+ & NMPC+PINN & 0.2289 & 0.7932 & 0.7391 & 18.28 & 1.36 \\
+ & NMPC+SINDy & 1.3229 & 1.4135 & 2.9351 & 64.46 & 1.69 \\
+ & NMPC+GP & 1.5376 & 1.9397 & 2.8505 & 54.22 & 3.14 \\
+param\_50pct & Analytical-NMPC & 11.3788 & 0.8902 & 19.6882 & 50.28 & 0.85 \\
+ & NMPC+PINN & 11.3788 & 0.8902 & 19.6882 & 50.28 & 1.42 \\
+ & NMPC+SINDy & 11.6857 & 1.8501 & 19.7371 & 67.81 & 1.88 \\
+ & NMPC+GP & 11.5881 & 1.7980 & 19.7858 & 67.13 & 3.13 \\
+\bottomrule
+\end{tabular}
+\end{table*}
